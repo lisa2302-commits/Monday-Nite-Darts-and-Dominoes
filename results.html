@@ -1,0 +1,11 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Results - Monday Nite League</title><link rel="stylesheet" href="css/style.css"></head><body>
+<header><h1>📝 Monday Nite League</h1><p>Results</p></header>
+<nav><a href="index.html">🏆 League</a><a href="fixtures.html">📅 Fixtures</a><a href="results.html">📝 Results</a><a href="stats.html">🎯 Player Stats</a><a href="halloffame.html">🏅 Hall of Fame</a><a href="admin.html">🔐 Admin</a></nav>
+<div class="card"><h2>📋 Results by Week</h2><label>Choose Week</label><select id="resultsWeek"><option value="all">All Weeks</option></select><table><thead><tr><th>Week</th><th>Home</th><th>Score</th><th>Away</th></tr></thead><tbody id="resultsTable"></tbody></table></div>
+<script>
+const results=JSON.parse(localStorage.getItem('results')||'[]');
+const week=document.getElementById('resultsWeek'); const table=document.getElementById('resultsTable');
+for(let i=1;i<=22;i++){const o=document.createElement('option');o.value=i;o.textContent='Week '+i;week.appendChild(o);}
+function render(){const w=week.value; const rows=results.filter(r=>w==='all'||Number(r.week)===Number(w)); table.innerHTML=''; if(!rows.length){table.innerHTML='<tr><td colspan="4">No results yet</td></tr>';return;} rows.slice().reverse().forEach(r=>{table.innerHTML+=`<tr><td>Week ${r.week}</td><td>${r.home}</td><td><strong>${r.homeScore} - ${r.awayScore}</strong></td><td>${r.away}</td></tr>`;});}
+week.addEventListener('change',render); render();
+</script></body></html>
