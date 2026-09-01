@@ -1,7 +1,9 @@
-
+(No subject)
+lisa beech
+You
 const teams = [
   "Crown A",
-  "Punch"
+  "Punch",
   "ICI",
   "Golden Cup",
   "The Park Inn",
@@ -21,6 +23,7 @@ const SUPABASE_KEY =
   "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
 
 async function loadLeagueTable() {
+
   const table = document.getElementById("leagueTable");
 
   if (!table) return;
@@ -32,9 +35,12 @@ async function loadLeagueTable() {
   `;
 
   try {
+
     const response = await fetch(
-      SUPABASE_URL + "/rest/v1/results?select=*",
+      SUPABASE_URL +
+      "/rest/v1/results?select=fixture,home_score,away_score,week",
       {
+        method: "GET",
         headers: {
           "apikey": SUPABASE_KEY
         }
@@ -42,12 +48,14 @@ async function loadLeagueTable() {
     );
 
     if (!response.ok) {
-      throw new Error("Supabase error: " + response.status);
+      throw new Error(
+        "Supabase returned " + response.status
+      );
     }
 
     const results = await response.json();
 
-    console.log("ONLINE RESULTS:", results);
+    console.log("TABLE RESULTS:", results);
 
     const data = {};
 
@@ -59,38 +67,56 @@ async function loadLeagueTable() {
     });
 
     results.forEach(result => {
-      if (!result.fixture) return;
 
-      const parts = result.fixture.split(" v ");
+      const fixture = String(result.fixture || "");
 
-      if (parts.length !== 2) return;
+      const parts = fixture.split(/\s+v\s+/);
+
+      if (parts.length !== 2) {
+        console.log("Skipped fixture:", fixture);
+        return;
+      }
 
       const home = parts[0].trim();
       const away = parts[1].trim();
 
-      if (!data[home] || !data[away]) return;
+      if (!data[home] || !data[away]) {
+        console.log("Team not recognised:", home, away);
+        return;
+      }
 
       const homeScore = Number(result.home_score);
       const awayScore = Number(result.away_score);
 
+      if (
+        !Number.isFinite(homeScore) ||
+        !Number.isFinite(awayScore)
+      ) {
+        return;
+      }
+
       data[home].played++;
       data[away].played++;
 
+      // 1 league point for every game won
       data[home].points += homeScore;
       data[away].points += awayScore;
     });
 
-    const sortedTeams = Object.entries(data).sort((a, b) => {
-      if (b[1].points !== a[1].points) {
-        return b[1].points - a[1].points;
-      }
+    const sortedTeams =
+      Object.entries(data).sort((a, b) => {
 
-      return a[0].localeCompare(b[0]);
-    });
+        if (b[1].points !== a[1].points) {
+          return b[1].points - a[1].points;
+        }
+
+        return a[0].localeCompare(b[0]);
+      });
 
     table.innerHTML = "";
 
     sortedTeams.forEach((team, index) => {
+
       table.innerHTML += `
         <tr>
           <td>${index + 1}</td>
@@ -99,9 +125,11 @@ async function loadLeagueTable() {
           <td>${team[1].points}</td>
         </tr>
       `;
+
     });
 
   } catch (error) {
+
     console.error("League table error:", error);
 
     table.innerHTML = `
@@ -111,7 +139,9 @@ async function loadLeagueTable() {
         </td>
       </tr>
     `;
+
   }
+
 }
 
 loadLeagueTable();
