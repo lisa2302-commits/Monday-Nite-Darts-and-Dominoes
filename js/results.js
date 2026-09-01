@@ -1,3 +1,4 @@
+
 const teams = [
   "Crown A",
   "Punch",
@@ -13,265 +14,137 @@ const teams = [
   "Victoria B"
 ];
 
-const weekSelect = document.getElementById("weekSelect");
-const fixtureSelect = document.getElementById("fixtureSelect");
+const SUPABASE_URL =
+  "https://wevedaffdzdvbkxydblw.supabase.co";
 
-let fixtures = [];
+const SUPABASE_KEY =
+  "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
 
-function generateFixtures() {
 
-  fixtures = [];
+window.loadLeagueTable = async function () {
 
-  const list = [...teams];
+  const table = document.getElementById("leagueTable");
 
-  for (let week = 1; week <= 11; week++) {
+  if (!table) {
+    console.error("leagueTable element not found");
+    return;
+  }
 
-    for (let i = 0; i < 6; i++) {
+  table.innerHTML = `
+    <tr>
+      <td colspan="4">Loading table...</td>
+    </tr>
+  `;
 
-      fixtures.push({
-        week: week,
-        home: list[i],
-        away: list[11 - i]
-      });
+  try {
 
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/results?select=fixture,home_score,away_score,week",
+      {
+        headers: {
+          "apikey": SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Supabase returned " + response.status
+      );
     }
 
-    const last = list.pop();
-    list.splice(1, 0, last);
-  }
+    const results = await response.json();
 
-  const firstHalf = [...fixtures];
+    console.log("TABLE RESULTS:", results);
 
-  firstHalf.forEach(fixture => {
+    const data = {};
 
-    fixtures.push({
-      week: fixture.week + 11,
-      home: fixture.away,
-      away: fixture.home
+    teams.forEach(team => {
+
+      data[team] = {
+        played: 0,
+        points: 0
+      };
+
     });
 
-  });
-}
+    results.forEach(result => {
 
+      if (!result.fixture) return;
 
-// LOAD WEEKS
+      const parts = result.fixture.split(" v ");
 
-function loadWeeks() {
+      if (parts.length !== 2) return;
 
-  weekSelect.innerHTML = "";
+      const home = parts[0].trim();
+      const away = parts[1].trim();
 
-  for (let week = 1; week <= 22; week++) {
+      if (!data[home] || !data[away]) {
+        console.warn("Team not recognised:", result.fixture);
+        return;
+      }
 
-    weekSelect.innerHTML += `
-      <option value="${week}">
-        Week ${week}
-      </option>
-    `;
+      const homeScore = Number(result.home_score);
+      const awayScore = Number(result.away_score);
 
-  }
+      if (
+        Number.isNaN(homeScore) ||
+        Number.isNaN(awayScore)
+      ) {
+        return;
+      }
 
-  loadFixturesForWeek();
-}
+      data[home].played++;
+      data[away].played++;
 
+      data[home].points += homeScore;
+      data[away].points += awayScore;
 
-// LOAD FIXTURES
+    });
 
-function loadFixturesForWeek() {
+    const sortedTeams =
+      Object.entries(data).sort((a, b) => {
 
-  const week = Number(weekSelect.value);
+        if (b[1].points !== a[1].points) {
+          return b[1].points - a[1].points;
+        }
 
-  fixtureSelect.innerHTML = "";
+        return a[0].localeCompare(b[0]);
 
-  fixtures
-    .filter(fixture => fixture.week === week)
-    .forEach((fixture, index) => {
+      });
 
-      fixtureSelect.innerHTML += `
-        <option value="${index}">
-          ${fixture.home} v ${fixture.away}
-        </option>
+    table.innerHTML = "";
+
+    sortedTeams.forEach((team, index) => {
+
+      table.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${team[0]}</td>
+          <td>${team[1].played}</td>
+          <td>${team[1].points}</td>
+        </tr>
       `;
 
     });
 
-}
+    console.log("TABLE UPDATED");
 
+  } catch (error) {
 
-// CHANGE WEEK
-
-weekSelect.addEventListener(
-  "change",
-  loadFixturesForWeek
-);
-
-
-// LOAD SAVED RESULTS
-
-let results =
-  JSON.parse(localStorage.getItem("results")) || [];
-
-
-// SAVE RESULT
-
-function saveResult() {
-
-  const week = Number(weekSelect.value);
-
-  const matches =
-    fixtures.filter(
-      fixture => fixture.week === week
-    );
-
-  const match =
-    matches[Number(fixtureSelect.value)];
-
-  const homeInput =
-    document.getElementById("homeScore");
-
-  const awayInput =
-    document.getElementById("awayScore");
-
-  if (
-    homeInput.value === "" ||
-    awayInput.value === ""
-  ) {
-
-    alert("Please enter both scores");
-
-    return;
-
-  }
-
-  const homeScore = Number(homeInput.value);
-  const awayScore = Number(awayInput.value);
-
-
-  // CHECK DUPLICATE
-
-  const alreadyEntered = results.some(result =>
-    Number(result.week) === week &&
-    result.home === match.home &&
-    result.away === match.away
-  );
-
-  if (alreadyEntered) {
-
-    alert("⚠️ This fixture already has a result!");
-
-    return;
-
-  }
-
-
-  results.push({
-
-    week: week,
-    home: match.home,
-    away: match.away,
-    homeScore: homeScore,
-    awayScore: awayScore
-
-  });
-
-
-  localStorage.setItem(
-    "results",
-    JSON.stringify(results)
-  );
-
-
-  loadResults();
-
-  homeInput.value = "";
-  awayInput.value = "";
-
-  alert("✅ Result saved!");
-
-}
-
-
-// DISPLAY RESULTS
-
-function loadResults() {
-
-  const table =
-    document.getElementById("resultsTable");
-
-  if (!table) return;
-
-  table.innerHTML = "";
-
-  if (results.length === 0) {
+    console.error("League table error:", error);
 
     table.innerHTML = `
       <tr>
-        <td colspan="5">
-          No results yet
+        <td colspan="4">
+          ❌ Unable to load league table
         </td>
       </tr>
     `;
 
-    return;
   }
 
+};
 
-  [...results].reverse().forEach((result, index) => {
-
-    table.innerHTML += `
-      <tr>
-
-        <td>Week ${result.week}</td>
-
-        <td>${result.home}</td>
-
-        <td>
-          ${result.homeScore} -
-          ${result.awayScore}
-        </td>
-
-        <td>${result.away}</td>
-
-        <td>
-          <button
-            onclick="deleteResult(${index})">
-            ❌
-          </button>
-        </td>
-
-      </tr>
-    `;
-
-  });
-
-}
-
-
-// DELETE RESULT
-
-function deleteResult(index) {
-
-  if (!confirm(
-    "Are you sure you want to delete this result?"
-  )) {
-
-    return;
-
-  }
-
-  results.splice(index, 1);
-
-  localStorage.setItem(
-    "results",
-    JSON.stringify(results)
-  );
-
-  loadResults();
-
-}
-
-
-// START
-
-generateFixtures();
-loadWeeks();
-loadResults();
+window.loadLeagueTable();
