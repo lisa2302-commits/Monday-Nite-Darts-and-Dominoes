@@ -20,7 +20,7 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
 
-async function loadLeagueTable() {
+window.loadLeagueTable= asyns function();
 
   const table = document.getElementById("leagueTable");
 
@@ -142,4 +142,4 @@ async function loadLeagueTable() {
 
 }
 
-loadLeagueTable();
+window.loadLeagueTable();
