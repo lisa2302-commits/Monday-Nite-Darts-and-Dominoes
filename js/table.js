@@ -1,6 +1,4 @@
-(No subject)
-lisa beech
-You
+
 const teams = [
   "Crown A",
   "Punch",
