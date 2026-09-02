@@ -1,4 +1,3 @@
-
 const teams = [
   "Crown A",
   "Punch",
@@ -20,11 +19,14 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
 
-window.loadLeagueTable= asyns function();
+window.loadLeagueTable = async function () {
 
   const table = document.getElementById("leagueTable");
 
-  if (!table) return;
+  if (!table) {
+    console.error("leagueTable not found");
+    return;
+  }
 
   table.innerHTML = `
     <tr>
@@ -79,7 +81,7 @@ window.loadLeagueTable= asyns function();
       const away = parts[1].trim();
 
       if (!data[home] || !data[away]) {
-        console.log("Team not recognised:", home, away);
+        console.log("Team not recognised:", fixture);
         return;
       }
 
@@ -90,13 +92,13 @@ window.loadLeagueTable= asyns function();
         !Number.isFinite(homeScore) ||
         !Number.isFinite(awayScore)
       ) {
+        console.log("Invalid score:", result);
         return;
       }
 
       data[home].played++;
       data[away].played++;
 
-      // 1 league point for every game won
       data[home].points += homeScore;
       data[away].points += awayScore;
     });
@@ -126,6 +128,8 @@ window.loadLeagueTable= asyns function();
 
     });
 
+    console.log("LEAGUE TABLE UPDATED");
+
   } catch (error) {
 
     console.error("League table error:", error);
@@ -139,7 +143,6 @@ window.loadLeagueTable= asyns function();
     `;
 
   }
-
-}
+};
 
 window.loadLeagueTable();
