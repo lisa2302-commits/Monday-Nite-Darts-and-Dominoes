@@ -30,7 +30,7 @@ window.loadLeagueTable = async function () {
 
   table.innerHTML = `
     <tr>
-      <td colspan="4">Loading table...</td>
+      <td colspan="7">Loading table...</td>
     </tr>
   `;
 
@@ -55,7 +55,7 @@ window.loadLeagueTable = async function () {
 
     const results = await response.json();
 
-    console.log("TABLE RESULTS:", results);
+    console.log("SUPABASE RESULTS:", results);
 
     const data = {};
 
@@ -68,33 +68,17 @@ window.loadLeagueTable = async function () {
 
     results.forEach(result => {
 
-      const fixture = String(result.fixture || "");
+      const scores = result.fixture.split(/\s+v\s+/);
 
-      const parts = fixture.split(/\s+v\s+/);
+      if (scores.length !== 2) return;
 
-      if (parts.length !== 2) {
-        console.log("Skipped fixture:", fixture);
-        return;
-      }
+      const home = scores[0].trim();
+      const away = scores[1].trim();
 
-      const home = parts[0].trim();
-      const away = parts[1].trim();
+      const homeScore = Number(result.home_score) || 0;
+      const awayScore = Number(result.away_score) || 0;
 
-      if (!data[home] || !data[away]) {
-        console.log("Team not recognised:", fixture);
-        return;
-      }
-
-      const homeScore = Number(result.home_score);
-      const awayScore = Number(result.away_score);
-
-      if (
-        !Number.isFinite(homeScore) ||
-        !Number.isFinite(awayScore)
-      ) {
-        console.log("Invalid score:", result);
-        return;
-      }
+      if (!data[home] || !data[away]) return;
 
       data[home].played++;
       data[away].played++;
@@ -103,15 +87,15 @@ window.loadLeagueTable = async function () {
       data[away].points += awayScore;
     });
 
-    const sortedTeams =
-      Object.entries(data).sort((a, b) => {
+    const sortedTeams = Object.entries(data).sort((a, b) => {
 
-        if (b[1].points !== a[1].points) {
-          return b[1].points - a[1].points;
-        }
+      if (b[1].points !== a[1].points) {
+        return b[1].points - a[1].points;
+      }
 
-        return a[0].localeCompare(b[0]);
-      });
+      return a[0].localeCompare(b[0]);
+
+    });
 
     table.innerHTML = "";
 
@@ -128,20 +112,17 @@ window.loadLeagueTable = async function () {
 
     });
 
-    console.log("LEAGUE TABLE UPDATED");
-
   } catch (error) {
 
-    console.error("League table error:", error);
+    console.error("LEAGUE TABLE ERROR:", error);
 
     table.innerHTML = `
       <tr>
-        <td colspan="4">
-          ❌ Unable to load league table
+        <td colspan="7">
+          Error loading league table
         </td>
       </tr>
     `;
-
   }
 };
 
