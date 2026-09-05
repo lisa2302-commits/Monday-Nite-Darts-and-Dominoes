@@ -64,13 +64,25 @@ window.loadLeagueTable = async function () {
       const homeScore = Number(result.home_score) || 0;
       const awayScore = Number(result.away_score) || 0;
 data[team] = {
-  played: 0,
-  wins: 0,
-  draws: 0,
-  losses: 0,
-  points: 0
-};
+  data[home].played++;
+data[away].played++;
 
+data[home].points += homeScore;
+data[away].points += awayScore;
+if (homeScore > awayScore) {
+  data[home].wins++;
+  data[away].losses++;
+}
+
+if (awayScore > homeScore) {
+  data[away].wins++;
+  data[home].losses++;
+}
+
+if (homeScore === awayScore) {
+  data[home].draws++;
+  data[away].draws++;
+}
     const sortedTeams = Object.entries(data).sort((a, b) => {
 
       if (b[1].points !== a[1].points) {
