@@ -1,17 +1,3 @@
-const teams = [
-  "Crown A",
-  "Punch",
-  "ICI",
-  "Golden Cup",
-  "The Park Inn",
-  "Bird in Hand",
-  "Victoria A",
-  "Two Gates Club",
-  "Funky Room",
-  "Entwistle",
-  "Crown B",
-  "Victoria B"
-];
 
 const SUPABASE_URL =
   "https://wevedaffdzdvbkxydblw.supabase.co";
