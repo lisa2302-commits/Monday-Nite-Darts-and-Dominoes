@@ -1,4 +1,3 @@
-
 const SUPABASE_URL =
   "https://wevedaffdzdvbkxydblw.supabase.co";
 
@@ -45,53 +44,97 @@ window.loadLeagueTable = async function () {
 
     const data = {};
 
+    const teams = [
+      "Crown A",
+      "Punch",
+      "ICI",
+      "Golden Cup",
+      "The Park Inn",
+      "Bird in Hand",
+      "Victoria A",
+      "Two Gates Club",
+      "Funky Room",
+      "Entwistle",
+      "Crown B",
+      "Victoria B"
+    ];
+
     teams.forEach(team => {
+
       data[team] = {
         played: 0,
+        wins: 0,
+        draws: 0,
+        losses: 0,
         points: 0
       };
+
     });
 
     results.forEach(result => {
 
-      const scores = result.fixture.split(/\s+v\s+/);
+      const scores =
+        result.fixture.split(/\s+v\s+/);
 
       if (scores.length !== 2) return;
 
       const home = scores[0].trim();
       const away = scores[1].trim();
 
-      const homeScore = Number(result.home_score) || 0;
-      const awayScore = Number(result.away_score) || 0;
-data[team] = {
-  data[home].played++;
-data[away].played++;
+      const homeScore =
+        Number(result.home_score) || 0;
 
-data[home].points += homeScore;
-data[away].points += awayScore;
-if (homeScore > awayScore) {
-  data[home].wins++;
-  data[away].losses++;
-}
+      const awayScore =
+        Number(result.away_score) || 0;
 
-if (awayScore > homeScore) {
-  data[away].wins++;
-  data[home].losses++;
-}
-
-if (homeScore === awayScore) {
-  data[home].draws++;
-  data[away].draws++;
-}
-    const sortedTeams = Object.entries(data).sort((a, b) => {
-
-      if (b[1].points !== a[1].points) {
-        return b[1].points - a[1].points;
+      if (!data[home] || !data[away]) {
+        console.warn(
+          "Team not found:",
+          home,
+          away
+        );
+        return;
       }
 
-      return a[0].localeCompare(b[0]);
+      data[home].played++;
+      data[away].played++;
+
+      data[home].points += homeScore;
+      data[away].points += awayScore;
+
+      if (homeScore > awayScore) {
+
+        data[home].wins++;
+        data[away].losses++;
+
+      } else if (awayScore > homeScore) {
+
+        data[away].wins++;
+        data[home].losses++;
+
+      } else {
+
+        data[home].draws++;
+        data[away].draws++;
+
+      }
 
     });
+
+    const sortedTeams =
+      Object.entries(data).sort((a, b) => {
+
+        if (b[1].points !== a[1].points) {
+          return b[1].points - a[1].points;
+        }
+
+        if (b[1].wins !== a[1].wins) {
+          return b[1].wins - a[1].wins;
+        }
+
+        return a[0].localeCompare(b[0]);
+
+      });
 
     table.innerHTML = "";
 
@@ -102,6 +145,9 @@ if (homeScore === awayScore) {
           <td>${index + 1}</td>
           <td>${team[0]}</td>
           <td>${team[1].played}</td>
+          <td>${team[1].wins}</td>
+          <td>${team[1].draws}</td>
+          <td>${team[1].losses}</td>
           <td>${team[1].points}</td>
         </tr>
       `;
@@ -110,7 +156,10 @@ if (homeScore === awayScore) {
 
   } catch (error) {
 
-    console.error("LEAGUE TABLE ERROR:", error);
+    console.error(
+      "LEAGUE TABLE ERROR:",
+      error
+    );
 
     table.innerHTML = `
       <tr>
@@ -119,7 +168,9 @@ if (homeScore === awayScore) {
         </td>
       </tr>
     `;
+
   }
+
 };
 
 window.loadLeagueTable();
