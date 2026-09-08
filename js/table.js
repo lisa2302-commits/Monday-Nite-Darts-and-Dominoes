@@ -174,4 +174,4 @@ window.loadLeagueTable = async function () {
 };
 
 window.loadLeagueTable();
-loadLeagueTable();
+
