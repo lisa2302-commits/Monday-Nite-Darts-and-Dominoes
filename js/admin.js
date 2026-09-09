@@ -492,6 +492,47 @@ async function savePlayer(){
     );
   }
 }
+async function loadAllPlayerSelectors(){
+
+  loadPlayerTeam();
+
+  const players =
+    await getPlayers();
+
+  [
+    "player180",
+    "checkoutPlayer",
+    "dominoPlayer",
+    "deletePlayer"
+  ].forEach(id => {
+
+    const s =
+      document.getElementById(id);
+
+    if(!s) return;
+
+    s.innerHTML = "";
+
+    if(!players.length){
+
+      s.innerHTML =
+        '<option value="">No players added yet</option>';
+
+      return;
+    }
+
+    players.forEach(player => {
+
+      s.innerHTML += `
+        <option value="${player.id}">
+          ${player.name} - ${player.team}
+        </option>
+      `;
+
+    });
+
+  });
+}
 async function savePlayer(){
 
   const name =
