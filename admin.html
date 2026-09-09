@@ -2,7 +2,27 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin - Monday Nite League</title><link rel="stylesheet" href="css/style.css"></head><body>
 <header><h1>🔐 Monday Nite League Admin</h1><p>League control centre</p></header>
 <nav><a href="index.html">🏆 League</a><a href="fixtures.html">📅 Fixtures</a><a href="results.html">📝 Results</a><a href="stats.html">🎯 Player Stats</a><a href="halloffame.html">🏅 Hall of Fame</a></nav>
-<div class="card" id="loginCard"><h2>🔐 Admin Login</h2><input id="adminPassword" type="password" placeholder="Enter password"><button onclick="login()">Login</button></div>
+<div class="card" id="loginCard">
+  <h2>🔐 Admin Login</h2>
+
+  <label>Email</label>
+  <input
+    id="adminEmail"
+    type="email"
+    placeholder="Enter admin email"
+  >
+
+  <label>Password</label>
+  <input
+    id="adminPassword"
+    type="password"
+    placeholder="Enter admin password"
+  >
+
+  <button onclick="login()">
+    Login
+  </button>
+</div>
 <div class="card" id="adminPanel" style="display:none;">
 <h2>⚙️ Admin Panel</h2><p>✅ Admin access granted.</p>
 <h2>📝 Enter Result</h2><label>Week</label><select id="weekSelect"></select><label>Fixture</label><select id="fixtureSelect"></select><label>Home Score</label><input id="homeScore" type="number" min="0"><label>Away Score</label><input id="awayScore" type="number" min="0"><button onclick="saveAdminResult()">💾 Save Result</button>
