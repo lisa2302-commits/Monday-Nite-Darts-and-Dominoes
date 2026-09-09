@@ -3,9 +3,175 @@
 <nav><a href="index.html">🏆 League</a><a href="fixtures.html">📅 Fixtures</a><a href="results.html">📝 Results</a><a href="stats.html">🎯 Player Stats</a><a href="halloffame.html">🏅 Hall of Fame</a><a href="admin.html">🔐 Admin</a></nav>
 <div class="card"><h2>📋 Results by Week</h2><label>Choose Week</label><select id="resultsWeek"><option value="all">All Weeks</option></select><table><thead><tr><th>Week</th><th>Home</th><th>Score</th><th>Away</th></tr></thead><tbody id="resultsTable"></tbody></table></div>
 <script>
-const results=JSON.parse(localStorage.getItem('results')||'[]');
-const week=document.getElementById('resultsWeek'); const table=document.getElementById('resultsTable');
-for(let i=1;i<=22;i++){const o=document.createElement('option');o.value=i;o.textContent='Week '+i;week.appendChild(o);}
-function render(){const w=week.value; const rows=results.filter(r=>w==='all'||Number(r.week)===Number(w)); table.innerHTML=''; if(!rows.length){table.innerHTML='<tr><td colspan="4">No results yet</td></tr>';return;} rows.slice().reverse().forEach(r=>{table.innerHTML+=`<tr><td>Week ${r.week}</td><td>${r.home}</td><td><strong>${r.homeScore} - ${r.awayScore}</strong></td><td>${r.away}</td></tr>`;});}
-week.addEventListener('change',render); render();
-</script></body></html>
+const SUPABASE_URL =
+  "https://wevedaffdzdvbkxydblw.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
+
+const week =
+  document.getElementById("resultsWeek");
+
+const table =
+  document.getElementById("resultsTable");
+
+
+// Add Week 1 - Week 22
+for (let i = 1; i <= 22; i++) {
+
+  const option =
+    document.createElement("option");
+
+  option.value = i;
+  option.textContent = "Week " + i;
+
+  week.appendChild(option);
+}
+
+
+// Load results from Supabase
+async function render() {
+
+  table.innerHTML = `
+    <tr>
+      <td colspan="4">
+        Loading results...
+      </td>
+    </tr>
+  `;
+
+  try {
+
+    let url =
+      SUPABASE_URL +
+      "/rest/v1/results" +
+      "?select=week,fixture,home_score,away_score" +
+      "&order=week.desc";
+
+    if (week.value !== "all") {
+
+      url +=
+        "&week=eq." +
+        Number(week.value);
+
+    }
+
+
+    const response =
+      await fetch(url, {
+
+        headers: {
+          "apikey": SUPABASE_KEY
+        }
+
+      });
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+
+    }
+
+
+    const results =
+      await response.json();
+
+
+    table.innerHTML = "";
+
+
+    if (!results.length) {
+
+      table.innerHTML = `
+        <tr>
+          <td colspan="4">
+            No results yet
+          </td>
+        </tr>
+      `;
+
+      return;
+
+    }
+
+
+    results.forEach(result => {
+
+      if (!result.fixture) return;
+
+
+      const teams =
+        result.fixture.split(/\s+v\s+/);
+
+
+      if (teams.length !== 2) return;
+
+
+      const home =
+        teams[0].trim();
+
+      const away =
+        teams[1].trim();
+
+
+      table.innerHTML += `
+        <tr>
+
+          <td>
+            Week ${result.week}
+          </td>
+
+          <td>
+            ${home}
+          </td>
+
+          <td>
+            <strong>
+              ${result.home_score}
+              -
+              ${result.away_score}
+            </strong>
+          </td>
+
+          <td>
+            ${away}
+          </td>
+
+        </tr>
+      `;
+
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      "RESULTS ERROR:",
+      error
+    );
+
+    table.innerHTML = `
+      <tr>
+        <td colspan="4">
+          ❌ Unable to load results
+        </td>
+      </tr>
+    `;
+
+  }
+
+}
+
+
+week.addEventListener(
+  "change",
+  render
+);
+
+
+render();
+</script>
