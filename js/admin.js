@@ -332,10 +332,10 @@ async function deleteAdminResult() {
           method: "DELETE",
 
           headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization":
-              "Bearer " + SUPABASE_KEY
-          }
+  "apikey": SUPABASE_KEY,
+  "Authorization":
+    "Bearer " + adminAccessToken
+}
         }
       );
 
