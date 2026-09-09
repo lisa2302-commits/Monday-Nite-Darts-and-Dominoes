@@ -203,7 +203,7 @@ async function loadDeleteResults() {
 
     const response = await fetch(
       SUPABASE_URL +
-      "/rest/v1/results?select=week,fixture,home_score,away_score&order=week.asc",
+      "/rest/v1/results?select=id,week,fixture,home_score,away_score&order=week.asc",
       {
         headers: {
           "apikey": SUPABASE_KEY,
@@ -309,18 +309,13 @@ async function deleteAdminResult() {
 
   try {
 
-    const params =
-      new URLSearchParams();
+  const params =
+  new URLSearchParams();
 
-    params.set(
-      "week",
-      "eq." + r.week
-    );
-
-    params.set(
-      "fixture",
-      "eq." + r.fixture
-    );
+params.set(
+  "id",
+  "eq." + r.id
+);
 
 
     const response =
