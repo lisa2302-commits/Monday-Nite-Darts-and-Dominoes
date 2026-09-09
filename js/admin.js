@@ -147,7 +147,7 @@ async function saveAdminResult() {
         headers: {
           "apikey": SUPABASE_KEY,
           "Authorization":
-  "Bearer " + adminAccessToken
+  "Bearer " + adminAccessToken,
           "Content-Type": "application/json",
           "Prefer": "return=representation"
         },
