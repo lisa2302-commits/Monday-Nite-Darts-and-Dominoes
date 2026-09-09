@@ -1,11 +1,35 @@
-
-const SUPABASE_URL = "https://wevedaffdzdvbkxydblw.supabase.co";
+const SUPABASE_URL =
+  "https://wevedaffdzdvbkxydblw.supabase.co";
 
 const SUPABASE_KEY =
   "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
+
 let adminAccessToken = "";
-const teams = ["Crown A","Punch","ICI","Golden Cup","The Park Inn","Bird in Hand","Victoria A","Two Gates Club","Funky Room","Entwistle","Crown B","Victoria B"];
-let fixtures=[];
+
+const teams = [
+  "Crown A",
+  "Punch",
+  "ICI",
+  "Golden Cup",
+  "The Park Inn",
+  "Bird in Hand",
+  "Victoria A",
+  "Two Gates Club",
+  "Funky Room",
+  "Entwistle",
+  "Crown B",
+  "Victoria B"
+];
+
+let fixtures = [];
+let onlineResults = [];
+let onlinePlayers = [];
+
+
+// ========================================
+// ADMIN LOGIN
+// ========================================
+
 async function login() {
 
   const email =
@@ -62,9 +86,12 @@ async function login() {
 
     generateFixtures();
     loadWeeks();
-    loadAllPlayerSelectors();
+
+    await loadAllPlayerSelectors();
+
     loadChampionTeams();
-    loadDeleteResults();
+
+    await loadDeleteResults();
 
     alert("🔐 Admin logged in!");
 
@@ -75,54 +102,158 @@ async function login() {
       error
     );
 
-    alert(
-      "❌ Could not log in."
-    );
+    alert("❌ Could not log in.");
   }
 }
 
 
-function generateFixtures(){
-  fixtures=[]; const list=[...teams];
-  for(let week=1;week<=11;week++){
-    for(let i=0;i<6;i++) fixtures.push({week,home:list[i],away:list[11-i]});
-    const last=list.pop(); list.splice(1,0,last);
+// ========================================
+// FIXTURES
+// ========================================
+
+function generateFixtures() {
+
+  fixtures = [];
+
+  const list = [...teams];
+
+  for (let week = 1; week <= 11; week++) {
+
+    for (let i = 0; i < 6; i++) {
+
+      fixtures.push({
+        week: week,
+        home: list[i],
+        away: list[11 - i]
+      });
+    }
+
+    const last = list.pop();
+
+    list.splice(1, 0, last);
   }
-  [...fixtures].forEach(f=>fixtures.push({week:f.week+11,home:f.away,away:f.home}));
+
+  const firstHalf =
+    [...fixtures];
+
+  firstHalf.forEach(f => {
+
+    fixtures.push({
+      week: f.week + 11,
+      home: f.away,
+      away: f.home
+    });
+
+  });
 }
 
-function loadWeeks(){
-  const select=document.getElementById("weekSelect"); if(!select)return;
-  select.innerHTML="";
-  for(let w=1;w<=22;w++) select.innerHTML+=`<option value="${w}">Week ${w}</option>`;
+
+function loadWeeks() {
+
+  const select =
+    document.getElementById("weekSelect");
+
+  if (!select) return;
+
+  select.innerHTML = "";
+
+  for (let w = 1; w <= 22; w++) {
+
+    select.innerHTML += `
+      <option value="${w}">
+        Week ${w}
+      </option>
+    `;
+  }
+
   loadFixturesForWeek();
 }
-function loadFixturesForWeek(){
-  const ws=document.getElementById("weekSelect"), fs=document.getElementById("fixtureSelect"); if(!ws||!fs)return;
-  const week=Number(ws.value); fs.innerHTML="";
-  fixtures.filter(f=>f.week===week).forEach((f,i)=>fs.innerHTML+=`<option value="${i}">${f.home} v ${f.away}</option>`);
+
+
+function loadFixturesForWeek() {
+
+  const weekSelect =
+    document.getElementById("weekSelect");
+
+  const fixtureSelect =
+    document.getElementById("fixtureSelect");
+
+  if (!weekSelect || !fixtureSelect) {
+    return;
+  }
+
+  const week =
+    Number(weekSelect.value);
+
+  fixtureSelect.innerHTML = "";
+
+  fixtures
+    .filter(f => f.week === week)
+    .forEach((f, i) => {
+
+      fixtureSelect.innerHTML += `
+        <option value="${i}">
+          ${f.home} v ${f.away}
+        </option>
+      `;
+
+    });
 }
-document.addEventListener("change",e=>{if(e.target.id==="weekSelect")loadFixturesForWeek();});
+
+
+document.addEventListener(
+  "change",
+  e => {
+
+    if (e.target.id === "weekSelect") {
+      loadFixturesForWeek();
+    }
+
+  }
+);
+
+
+// ========================================
+// SAVE RESULT
+// ========================================
 
 async function saveAdminResult() {
 
   const week =
-    Number(document.getElementById("weekSelect").value);
+    Number(
+      document.getElementById(
+        "weekSelect"
+      ).value
+    );
 
   const fixtureIndex =
-    Number(document.getElementById("fixtureSelect").value);
+    Number(
+      document.getElementById(
+        "fixtureSelect"
+      ).value
+    );
 
   const match =
-    fixtures.filter(f => f.week === week)[fixtureIndex];
+    fixtures
+      .filter(f => f.week === week)
+      [fixtureIndex];
 
   const homeInput =
-    document.getElementById("homeScore");
+    document.getElementById(
+      "homeScore"
+    );
 
   const awayInput =
-    document.getElementById("awayScore");
+    document.getElementById(
+      "awayScore"
+    );
 
   if (!match) {
-    alert("Please select a fixture.");
+
+    alert(
+      "Please select a fixture."
+    );
+
     return;
   }
 
@@ -130,69 +261,106 @@ async function saveAdminResult() {
     homeInput.value === "" ||
     awayInput.value === ""
   ) {
-    alert("Please enter both scores.");
+
+    alert(
+      "Please enter both scores."
+    );
+
     return;
   }
 
-  const homeScore = Number(homeInput.value);
-  const awayScore = Number(awayInput.value);
+  const homeScore =
+    Number(homeInput.value);
+
+  const awayScore =
+    Number(awayInput.value);
 
   try {
 
     const response = await fetch(
-      SUPABASE_URL + "/rest/v1/results",
+      SUPABASE_URL +
+      "/rest/v1/results",
       {
         method: "POST",
 
         headers: {
-          "apikey": SUPABASE_KEY,
+          "apikey":
+            SUPABASE_KEY,
+
           "Authorization":
-  "Bearer " + adminAccessToken,
-          "Content-Type": "application/json",
-          "Prefer": "return=representation"
+            "Bearer " +
+            adminAccessToken,
+
+          "Content-Type":
+            "application/json",
+
+          "Prefer":
+            "return=representation"
         },
 
         body: JSON.stringify({
           week: week,
-          fixture: `${match.home} v ${match.away}`,
-          home_score: homeScore,
-          away_score: awayScore
+
+          fixture:
+            `${match.home} v ${match.away}`,
+
+          home_score:
+            homeScore,
+
+          away_score:
+            awayScore
         })
       }
     );
 
     if (!response.ok) {
 
-      const errorText = await response.text();
+      const errorText =
+        await response.text();
 
-      console.error(errorText);
+      console.error(
+        errorText
+      );
 
       throw new Error(
-        "Supabase returned " + response.status
+        "Supabase returned " +
+        response.status
       );
     }
 
     homeInput.value = "";
     awayInput.value = "";
 
-    alert("✅ Result saved online!");
+    await loadDeleteResults();
+
+    alert(
+      "✅ Result saved online!"
+    );
 
   } catch (error) {
 
-    console.error("SAVE RESULT ERROR:", error);
+    console.error(
+      "SAVE RESULT ERROR:",
+      error
+    );
 
     alert(
-      "❌ Result could not be saved. Check the console."
+      "❌ Result could not be saved."
     );
   }
 }
 
-let onlineResults = [];
+
+// ========================================
+// LOAD RESULTS FOR DELETE
+// ========================================
 
 async function loadDeleteResults() {
 
   const select =
-    document.getElementById("deleteResultSelect");
+    document.getElementById(
+      "deleteResultSelect"
+    );
 
   if (!select) return;
 
@@ -203,17 +371,23 @@ async function loadDeleteResults() {
 
     const response = await fetch(
       SUPABASE_URL +
-      "/rest/v1/results?select=id,week,fixture,home_score,away_score&order=week.asc",
+      "/rest/v1/results" +
+      "?select=id,week,fixture,home_score,away_score" +
+      "&order=week.asc",
       {
         headers: {
-          "apikey": SUPABASE_KEY,
+          "apikey":
+            SUPABASE_KEY,
+
           "Authorization":
-            "Bearer " + SUPABASE_KEY
+            "Bearer " +
+            adminAccessToken
         }
       }
     );
 
     if (!response.ok) {
+
       throw new Error(
         "Supabase returned " +
         response.status
@@ -233,26 +407,30 @@ async function loadDeleteResults() {
       return;
     }
 
-    onlineResults.forEach((r, i) => {
+    onlineResults.forEach(
+      (r, i) => {
 
-      const teams =
-        r.fixture.split(/\s+v\s+/);
+        const parts =
+          r.fixture.split(
+            /\s+v\s+/
+          );
 
-      const home =
-        teams[0] || "";
+        const home =
+          parts[0] || "";
 
-      const away =
-        teams[1] || "";
+        const away =
+          parts[1] || "";
 
-      select.innerHTML += `
-        <option value="${i}">
-          Week ${r.week}: ${home}
-          ${r.home_score}-${r.away_score}
-          ${away}
-        </option>
-      `;
-
-    });
+        select.innerHTML += `
+          <option value="${i}">
+            Week ${r.week}:
+            ${home}
+            ${r.home_score}-${r.away_score}
+            ${away}
+          </option>
+        `;
+      }
+    );
 
   } catch (error) {
 
@@ -267,80 +445,89 @@ async function loadDeleteResults() {
 }
 
 
+// ========================================
+// DELETE RESULT
+// ========================================
+
 async function deleteAdminResult() {
 
   const select =
-    document.getElementById("deleteResultSelect");
+    document.getElementById(
+      "deleteResultSelect"
+    );
 
   if (
     !select ||
     select.value === ""
   ) {
 
-    alert("No result selected.");
+    alert(
+      "No result selected."
+    );
+
     return;
   }
 
-  const r =
-    onlineResults[Number(select.value)];
+  const result =
+    onlineResults[
+      Number(select.value)
+    ];
 
-  if (!r) return;
+  if (!result) return;
 
-
-  const teams =
-    r.fixture.split(/\s+v\s+/);
+  const parts =
+    result.fixture.split(
+      /\s+v\s+/
+    );
 
   const home =
-    teams[0] || "";
+    parts[0] || "";
 
   const away =
-    teams[1] || "";
-
+    parts[1] || "";
 
   if (
     !confirm(
-      `Delete Week ${r.week}: ` +
-      `${home} ${r.home_score}-${r.away_score} ${away}?`
+      `Delete Week ${result.week}: ` +
+      `${home} ${result.home_score}-` +
+      `${result.away_score} ${away}?`
     )
   ) {
     return;
   }
 
-
   try {
-
-  const params =
-  new URLSearchParams();
-
-params.set(
-  "id",
-  "eq." + r.id
-);
-
 
     const response =
       await fetch(
         SUPABASE_URL +
-        "/rest/v1/results?" +
-        params.toString(),
+        "/rest/v1/results" +
+        "?id=eq." +
+        encodeURIComponent(
+          result.id
+        ),
         {
           method: "DELETE",
 
           headers: {
-  "apikey": SUPABASE_KEY,
-  "Authorization":
-    "Bearer " + adminAccessToken
-}
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              adminAccessToken
+          }
         }
       );
-
 
     if (!response.ok) {
 
       const errorText =
         await response.text();
 
-      console.error(errorText);
+      console.error(
+        errorText
+      );
 
       throw new Error(
         "Supabase returned " +
@@ -348,13 +535,11 @@ params.set(
       );
     }
 
-
     await loadDeleteResults();
 
     alert(
       "🗑️ Result deleted online."
     );
-
 
   } catch (error) {
 
@@ -369,130 +554,89 @@ params.set(
   }
 }
 
-function loadPlayerTeam(){const s=document.getElementById("playerTeam");if(!s)return;s.innerHTML="";teams.forEach(t=>s.innerHTML+=`<option value="${t}">${t}</option>`);}
-async function savePlayer(){
 
-  const name =
-    document.getElementById("playerName").value.trim();
+// ========================================
+// PLAYER TEAM LIST
+// ========================================
 
-  const team =
-    document.getElementById("playerTeam").value;
+function loadPlayerTeam() {
 
-  if(!name){
-    alert("Please enter a player name.");
-    return;
-  }
+  const select =
+    document.getElementById(
+      "playerTeam"
+    );
+
+  if (!select) return;
+
+  select.innerHTML = "";
+
+  teams.forEach(team => {
+
+    select.innerHTML += `
+      <option value="${team}">
+        ${team}
+      </option>
+    `;
+
+  });
+}
+
+
+// ========================================
+// GET PLAYERS FROM SUPABASE
+// ========================================
+
+async function getPlayers() {
 
   try {
 
     const response = await fetch(
-      SUPABASE_URL + "/rest/v1/players",
+      SUPABASE_URL +
+      "/rest/v1/players" +
+      "?select=id,name,team,hundreds,checkout,domino30" +
+      "&order=name.asc",
       {
-        method: "POST",
         headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + adminAccessToken,
-          "Content-Type": "application/json",
-          "Prefer": "return=representation"
-        },
-        body: JSON.stringify({
-          name: name,
-          team: team,
-          hundreds: 0,
-          checkout: 0,
-          domino30: 0
-        })
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            "Bearer " +
+            adminAccessToken
+        }
       }
     );
 
-    if(!response.ok){
-      const errorText = await response.text();
-      console.error(errorText);
+    if (!response.ok) {
+
       throw new Error(
-        "Supabase returned " + response.status
+        "Supabase returned " +
+        response.status
       );
     }
 
-    document.getElementById(
-      "playerName"
-    ).value = "";
+    onlinePlayers =
+      await response.json();
 
-    alert("👤 Player saved online!");
+    return onlinePlayers;
 
-  } catch(error){
+  } catch (error) {
 
     console.error(
-      "SAVE PLAYER ERROR:",
+      "LOAD PLAYERS ERROR:",
       error
     );
 
-    alert(
-      "❌ Player could not be saved."
-    );
+    return [];
   }
 }
-async function savePlayer(){
 
-  const name =
-    document.getElementById("playerName").value.trim();
 
-  const team =
-    document.getElementById("playerTeam").value;
+// ========================================
+// PLAYER DROPDOWNS
+// ========================================
 
-  if(!name){
-    alert("Please enter a player name.");
-    return;
-  }
-
-  try {
-
-    const response = await fetch(
-      SUPABASE_URL + "/rest/v1/players",
-      {
-        method: "POST",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + adminAccessToken,
-          "Content-Type": "application/json",
-          "Prefer": "return=representation"
-        },
-        body: JSON.stringify({
-          name: name,
-          team: team,
-          hundreds: 0,
-          checkout: 0,
-          domino30: 0
-        })
-      }
-    );
-
-    if(!response.ok){
-      const errorText = await response.text();
-      console.error(errorText);
-      throw new Error(
-        "Supabase returned " + response.status
-      );
-    }
-
-    document.getElementById(
-      "playerName"
-    ).value = "";
-
-    alert("👤 Player saved online!");
-
-  } catch(error){
-
-    console.error(
-      "SAVE PLAYER ERROR:",
-      error
-    );
-
-    alert(
-      "❌ Player could not be saved."
-    );
-  }
-}
-async function loadAllPlayerSelectors(){
+async function loadAllPlayerSelectors() {
 
   loadPlayerTeam();
 
@@ -506,16 +650,16 @@ async function loadAllPlayerSelectors(){
     "deletePlayer"
   ].forEach(id => {
 
-    const s =
+    const select =
       document.getElementById(id);
 
-    if(!s) return;
+    if (!select) return;
 
-    s.innerHTML = "";
+    select.innerHTML = "";
 
-    if(!players.length){
+    if (!players.length) {
 
-      s.innerHTML =
+      select.innerHTML =
         '<option value="">No players added yet</option>';
 
       return;
@@ -523,7 +667,7 @@ async function loadAllPlayerSelectors(){
 
     players.forEach(player => {
 
-      s.innerHTML += `
+      select.innerHTML += `
         <option value="${player.id}">
           ${player.name} - ${player.team}
         </option>
@@ -533,31 +677,56 @@ async function loadAllPlayerSelectors(){
 
   });
 }
-async function savePlayer(){
+
+
+// ========================================
+// SAVE PLAYER
+// ========================================
+
+async function savePlayer() {
 
   const name =
-    document.getElementById("playerName").value.trim();
+    document.getElementById(
+      "playerName"
+    ).value.trim();
 
   const team =
-    document.getElementById("playerTeam").value;
+    document.getElementById(
+      "playerTeam"
+    ).value;
 
-  if(!name){
-    alert("Please enter a player name.");
+  if (!name) {
+
+    alert(
+      "Please enter a player name."
+    );
+
     return;
   }
 
   try {
 
     const response = await fetch(
-      SUPABASE_URL + "/rest/v1/players",
+      SUPABASE_URL +
+      "/rest/v1/players",
       {
         method: "POST",
+
         headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + adminAccessToken,
-          "Content-Type": "application/json",
-          "Prefer": "return=representation"
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            "Bearer " +
+            adminAccessToken,
+
+          "Content-Type":
+            "application/json",
+
+          "Prefer":
+            "return=representation"
         },
+
         body: JSON.stringify({
           name: name,
           team: team,
@@ -568,11 +737,18 @@ async function savePlayer(){
       }
     );
 
-    if(!response.ok){
-      const errorText = await response.text();
-      console.error(errorText);
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      console.error(
+        errorText
+      );
+
       throw new Error(
-        "Supabase returned " + response.status
+        "Supabase returned " +
+        response.status
       );
     }
 
@@ -580,9 +756,13 @@ async function savePlayer(){
       "playerName"
     ).value = "";
 
-    alert("👤 Player saved online!");
+    await loadAllPlayerSelectors();
 
-  } catch(error){
+    alert(
+      "👤 Player saved online!"
+    );
+
+  } catch (error) {
 
     console.error(
       "SAVE PLAYER ERROR:",
@@ -594,33 +774,616 @@ async function savePlayer(){
     );
   }
 }
-function deletePlayer(){
-  const s=document.getElementById("deletePlayer"); if(!s||s.value===""){alert("Please select a player.");return;}
-  const players=getPlayers(), i=Number(s.value); if(!players[i])return;
-  if(!confirm(`Delete ${players[i].name}? This removes their 180s, checkout and 3–0 stats.`))return;
-  players.splice(i,1); setPlayers(players); loadAllPlayerSelectors(); alert("🗑️ Player deleted.");
+
+
+// ========================================
+// FIND PLAYER BY ID
+// ========================================
+
+function findOnlinePlayer(id) {
+
+  return onlinePlayers.find(
+    player =>
+      String(player.id) ===
+      String(id)
+  );
 }
-function add180(){
-  const s=document.getElementById("player180"); if(!s||s.value===""){alert("Please select a player.");return;}
-  const players=getPlayers(),i=Number(s.value); if(!players[i])return; players[i].hundreds=(Number(players[i].hundreds)||0)+1; setPlayers(players); alert(`🎯 180 added for ${players[i].name}!`);
+
+
+// ========================================
+// DELETE PLAYER
+// ========================================
+
+async function deletePlayer() {
+
+  const select =
+    document.getElementById(
+      "deletePlayer"
+    );
+
+  if (
+    !select ||
+    select.value === ""
+  ) {
+
+    alert(
+      "Please select a player."
+    );
+
+    return;
+  }
+
+  const player =
+    findOnlinePlayer(
+      select.value
+    );
+
+  if (!player) {
+
+    alert(
+      "Player could not be found."
+    );
+
+    return;
+  }
+
+  if (
+    !confirm(
+      `Delete ${player.name}? ` +
+      "This removes their 180s, " +
+      "checkout and 3–0 stats."
+    )
+  ) {
+    return;
+  }
+
+  try {
+
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/players" +
+        "?id=eq." +
+        encodeURIComponent(
+          player.id
+        ),
+        {
+          method: "DELETE",
+
+          headers: {
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              adminAccessToken
+          }
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+    }
+
+    await loadAllPlayerSelectors();
+
+    alert(
+      "🗑️ Player deleted online."
+    );
+
+  } catch (error) {
+
+    console.error(
+      "DELETE PLAYER ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Player could not be deleted."
+    );
+  }
 }
-function addDomino30(){
-  const s=document.getElementById("dominoPlayer"); if(!s||s.value===""){alert("Please select a player.");return;}
-  const players=getPlayers(),i=Number(s.value); if(!players[i])return; players[i].domino30=(Number(players[i].domino30)||0)+1; setPlayers(players); alert(`🎲 3–0 added for ${players[i].name}!`);
+
+
+// ========================================
+// ADD 180
+// ========================================
+
+async function add180() {
+
+  const select =
+    document.getElementById(
+      "player180"
+    );
+
+  if (
+    !select ||
+    select.value === ""
+  ) {
+
+    alert(
+      "Please select a player."
+    );
+
+    return;
+  }
+
+  const player =
+    findOnlinePlayer(
+      select.value
+    );
+
+  if (!player) {
+
+    alert(
+      "Player could not be found."
+    );
+
+    return;
+  }
+
+  const newTotal =
+    (Number(player.hundreds) || 0) + 1;
+
+  try {
+
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/players" +
+        "?id=eq." +
+        encodeURIComponent(
+          player.id
+        ),
+        {
+          method: "PATCH",
+
+          headers: {
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              adminAccessToken,
+
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            hundreds: newTotal
+          })
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+    }
+
+    await loadAllPlayerSelectors();
+
+    alert(
+      `🎯 180 added for ${player.name}!`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "ADD 180 ERROR:",
+      error
+    );
+
+    alert(
+      "❌ 180 could not be saved."
+    );
+  }
 }
-function saveCheckout(){
-  const s=document.getElementById("checkoutPlayer"), input=document.getElementById("checkoutValue"); if(!s||s.value===""){alert("Please select a player.");return;}
-  const value=Number(input.value),players=getPlayers(),i=Number(s.value); if(!players[i])return;
-  if(!value||value<1){alert("Please enter a checkout.");return;}
-  const current=Number(players[i].checkout)||0; if(value<=current){alert(`The player's existing highest checkout is already ${current}.`);return;}
-  players[i].checkout=value; setPlayers(players); input.value=""; alert(`🎯 Highest checkout saved for ${players[i].name}!`);
+
+
+// ========================================
+// ADD DOMINOES 3-0
+// ========================================
+
+async function addDomino30() {
+
+  const select =
+    document.getElementById(
+      "dominoPlayer"
+    );
+
+  if (
+    !select ||
+    select.value === ""
+  ) {
+
+    alert(
+      "Please select a player."
+    );
+
+    return;
+  }
+
+  const player =
+    findOnlinePlayer(
+      select.value
+    );
+
+  if (!player) {
+
+    alert(
+      "Player could not be found."
+    );
+
+    return;
+  }
+
+  const newTotal =
+    (Number(player.domino30) || 0) + 1;
+
+  try {
+
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/players" +
+        "?id=eq." +
+        encodeURIComponent(
+          player.id
+        ),
+        {
+          method: "PATCH",
+
+          headers: {
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              adminAccessToken,
+
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            domino30: newTotal
+          })
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+    }
+
+    await loadAllPlayerSelectors();
+
+    alert(
+      `🎲 3–0 added for ${player.name}!`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "ADD 3-0 ERROR:",
+      error
+    );
+
+    alert(
+      "❌ 3–0 could not be saved."
+    );
+  }
 }
-function loadChampionTeams(){const s=document.getElementById("championTeam");if(!s)return;s.innerHTML="";teams.forEach(t=>s.innerHTML+=`<option value="${t}">${t}</option>`);}
-function saveChampion(){
-  const season=document.getElementById("championSeason").value.trim(),team=document.getElementById("championTeam").value; if(!season){alert("Please enter the season.");return;}
-  const champions=JSON.parse(localStorage.getItem("champions"))||[];champions.push({season,team});localStorage.setItem("champions",JSON.stringify(champions));document.getElementById("championSeason").value="";alert(`🏆 ${team} saved as champions for ${season}!`);
+
+
+// ========================================
+// HIGHEST CHECKOUT
+// ========================================
+
+async function saveCheckout() {
+
+  const select =
+    document.getElementById(
+      "checkoutPlayer"
+    );
+
+  const input =
+    document.getElementById(
+      "checkoutValue"
+    );
+
+  if (
+    !select ||
+    select.value === ""
+  ) {
+
+    alert(
+      "Please select a player."
+    );
+
+    return;
+  }
+
+  const value =
+    Number(input.value);
+
+  if (
+    !value ||
+    value < 1
+  ) {
+
+    alert(
+      "Please enter a checkout."
+    );
+
+    return;
+  }
+
+  const player =
+    findOnlinePlayer(
+      select.value
+    );
+
+  if (!player) {
+
+    alert(
+      "Player could not be found."
+    );
+
+    return;
+  }
+
+  const current =
+    Number(player.checkout) || 0;
+
+  if (value <= current) {
+
+    alert(
+      `The player's existing highest checkout is already ${current}.`
+    );
+
+    return;
+  }
+
+  try {
+
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/players" +
+        "?id=eq." +
+        encodeURIComponent(
+          player.id
+        ),
+        {
+          method: "PATCH",
+
+          headers: {
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              adminAccessToken,
+
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            checkout: value
+          })
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+    }
+
+    input.value = "";
+
+    await loadAllPlayerSelectors();
+
+    alert(
+      `🎯 Highest checkout saved for ${player.name}!`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "SAVE CHECKOUT ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Checkout could not be saved."
+    );
+  }
 }
-function backupLeague(){
-  const data={results:JSON.parse(localStorage.getItem("results")||"[]"),players:JSON.parse(localStorage.getItem("players")||"[]"),champions:JSON.parse(localStorage.getItem("champions")||"[]")};
-  document.getElementById("backupArea").style.display="block";document.getElementById("backupText").value=JSON.stringify(data,null,2);
+
+
+// ========================================
+// CHAMPIONS
+// ========================================
+
+function loadChampionTeams() {
+
+  const select =
+    document.getElementById(
+      "championTeam"
+    );
+
+  if (!select) return;
+
+  select.innerHTML = "";
+
+  teams.forEach(team => {
+
+    select.innerHTML += `
+      <option value="${team}">
+        ${team}
+      </option>
+    `;
+
+  });
+}
+
+
+function saveChampion() {
+
+  const season =
+    document.getElementById(
+      "championSeason"
+    ).value.trim();
+
+  const team =
+    document.getElementById(
+      "championTeam"
+    ).value;
+
+  if (!season) {
+
+    alert(
+      "Please enter the season."
+    );
+
+    return;
+  }
+
+  const champions =
+    JSON.parse(
+      localStorage.getItem(
+        "champions"
+      )
+    ) || [];
+
+  champions.push({
+    season: season,
+    team: team
+  });
+
+  localStorage.setItem(
+    "champions",
+    JSON.stringify(champions)
+  );
+
+  document.getElementById(
+    "championSeason"
+  ).value = "";
+
+  alert(
+    `🏆 ${team} saved as champions for ${season}!`
+  );
+}
+
+
+// ========================================
+// BACKUP
+// ========================================
+
+async function backupLeague() {
+
+  try {
+
+    const resultsResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/results?select=*",
+        {
+          headers: {
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              adminAccessToken
+          }
+        }
+      );
+
+    const playersResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/players?select=*",
+        {
+          headers: {
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              adminAccessToken
+          }
+        }
+      );
+
+    const results =
+      await resultsResponse.json();
+
+    const players =
+      await playersResponse.json();
+
+    const champions =
+      JSON.parse(
+        localStorage.getItem(
+          "champions"
+        )
+      ) || [];
+
+    const data = {
+      results: results,
+      players: players,
+      champions: champions
+    };
+
+    const backupArea =
+      document.getElementById(
+        "backupArea"
+      );
+
+    const backupText =
+      document.getElementById(
+        "backupText"
+      );
+
+    if (backupArea) {
+      backupArea.style.display =
+        "block";
+    }
+
+    if (backupText) {
+      backupText.value =
+        JSON.stringify(
+          data,
+          null,
+          2
+        );
+    }
+
+  } catch (error) {
+
+    console.error(
+      "BACKUP ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Backup could not be created."
+    );
+  }
 }
