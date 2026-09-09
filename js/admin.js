@@ -370,15 +370,127 @@ params.set(
 }
 
 function loadPlayerTeam(){const s=document.getElementById("playerTeam");if(!s)return;s.innerHTML="";teams.forEach(t=>s.innerHTML+=`<option value="${t}">${t}</option>`);}
-function getPlayers(){return JSON.parse(localStorage.getItem("players"))||[];}
-function setPlayers(players){localStorage.setItem("players",JSON.stringify(players));}
-function loadAllPlayerSelectors(){
-  loadPlayerTeam(); const players=getPlayers();
-  ["player180","checkoutPlayer","dominoPlayer","deletePlayer"].forEach(id=>{
-    const s=document.getElementById(id); if(!s)return; s.innerHTML="";
-    if(!players.length){s.innerHTML='<option value="">No players added yet</option>';return;}
-    players.forEach((pl,i)=>s.innerHTML+=`<option value="${i}">${pl.name} - ${pl.team}</option>`);
-  });
+async function savePlayer(){
+
+  const name =
+    document.getElementById("playerName").value.trim();
+
+  const team =
+    document.getElementById("playerTeam").value;
+
+  if(!name){
+    alert("Please enter a player name.");
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      SUPABASE_URL + "/rest/v1/players",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + adminAccessToken,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          name: name,
+          team: team,
+          hundreds: 0,
+          checkout: 0,
+          domino30: 0
+        })
+      }
+    );
+
+    if(!response.ok){
+      const errorText = await response.text();
+      console.error(errorText);
+      throw new Error(
+        "Supabase returned " + response.status
+      );
+    }
+
+    document.getElementById(
+      "playerName"
+    ).value = "";
+
+    alert("👤 Player saved online!");
+
+  } catch(error){
+
+    console.error(
+      "SAVE PLAYER ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Player could not be saved."
+    );
+  }
+}
+async function savePlayer(){
+
+  const name =
+    document.getElementById("playerName").value.trim();
+
+  const team =
+    document.getElementById("playerTeam").value;
+
+  if(!name){
+    alert("Please enter a player name.");
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      SUPABASE_URL + "/rest/v1/players",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + adminAccessToken,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          name: name,
+          team: team,
+          hundreds: 0,
+          checkout: 0,
+          domino30: 0
+        })
+      }
+    );
+
+    if(!response.ok){
+      const errorText = await response.text();
+      console.error(errorText);
+      throw new Error(
+        "Supabase returned " + response.status
+      );
+    }
+
+    document.getElementById(
+      "playerName"
+    ).value = "";
+
+    alert("👤 Player saved online!");
+
+  } catch(error){
+
+    console.error(
+      "SAVE PLAYER ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Player could not be saved."
+    );
+  }
 }
 async function savePlayer(){
 
