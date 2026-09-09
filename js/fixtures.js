@@ -1,3 +1,10 @@
+const SUPABASE_URL =
+  "https://wevedaffdzdvbkxydblw.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
+
+
 const teams = [
   "Crown A",
   "Punch",
@@ -12,6 +19,7 @@ const teams = [
   "Crown B",
   "Victoria B"
 ];
+
 
 const fixturesTable =
   document.getElementById("fixturesTable");
@@ -89,87 +97,140 @@ function loadWeeks() {
 
 
 // ============================
-// LOAD FIXTURES
+// LOAD FIXTURES FROM SUPABASE
 // ============================
 
-function loadFixtures() {
+async function loadFixtures() {
 
   const selectedWeek =
     Number(weekSelect.value);
 
-  fixturesTable.innerHTML = "";
+  fixturesTable.innerHTML = `
+    <tr>
+      <td colspan="5">
+        Loading fixtures...
+      </td>
+    </tr>
+  `;
 
+  try {
 
-  // Get saved results
-  const results =
-    JSON.parse(
-      localStorage.getItem("results")
-    ) || [];
-
-
-  fixtures
-    .filter(
-      fixture => fixture.week === selectedWeek
-    )
-    .forEach(fixture => {
-
-
-      // Look for this fixture in saved results
-      const result = results.find(saved =>
-
-        Number(saved.week) === fixture.week &&
-
-        (
-          (
-            saved.home === fixture.home &&
-            saved.away === fixture.away
-          )
-
-          ||
-
-          (
-            saved.home === fixture.away &&
-            saved.away === fixture.home
-          )
-        )
-
-      );
-
-
-      let status = "⚪ Not Played";
-
-      let score = "-";
-
-
-      if (result) {
-
-        status = "🟢 Played";
-
-        score =
-          `${result.homeScore} - ${result.awayScore}`;
-
+    const response = await fetch(
+      SUPABASE_URL +
+      `/rest/v1/results?select=fixture,home_score,away_score,week&week=eq.${selectedWeek}`,
+      {
+        headers: {
+          "apikey": SUPABASE_KEY
+        }
       }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Supabase returned " + response.status
+      );
+    }
+
+    const results =
+      await response.json();
+
+    fixturesTable.innerHTML = "";
 
 
-      fixturesTable.innerHTML += `
+    fixtures
+      .filter(
+        fixture =>
+          fixture.week === selectedWeek
+      )
+      .forEach(fixture => {
 
-        <tr>
+        const result =
+          results.find(saved => {
 
-          <td>Week ${fixture.week}</td>
+            const teams =
+              saved.fixture.split(/\s+v\s+/);
 
-          <td>${fixture.home}</td>
+            if (teams.length !== 2) {
+              return false;
+            }
 
-          <td>${fixture.away}</td>
+            const savedHome =
+              teams[0].trim();
 
-          <td>${score}</td>
+            const savedAway =
+              teams[1].trim();
 
-          <td>${status}</td>
+            return (
+              Number(saved.week) ===
+                fixture.week &&
+              savedHome ===
+                fixture.home &&
+              savedAway ===
+                fixture.away
+            );
 
-        </tr>
+          });
 
-      `;
 
-    });
+        let status =
+          "⚪ Not Played";
+
+        let score = "-";
+
+
+        if (result) {
+
+          status =
+            "🟢 Played";
+
+          score =
+            `${result.home_score} - ${result.away_score}`;
+
+        }
+
+
+        fixturesTable.innerHTML += `
+          <tr>
+            <td>
+              Week ${fixture.week}
+            </td>
+
+            <td>
+              ${fixture.home}
+            </td>
+
+            <td>
+              ${fixture.away}
+            </td>
+
+            <td>
+              ${score}
+            </td>
+
+            <td>
+              ${status}
+            </td>
+          </tr>
+        `;
+
+      });
+
+  } catch (error) {
+
+    console.error(
+      "FIXTURES ERROR:",
+      error
+    );
+
+    fixturesTable.innerHTML = `
+      <tr>
+        <td colspan="5">
+          Error loading fixtures
+        </td>
+      </tr>
+    `;
+
+  }
 
 }
 
