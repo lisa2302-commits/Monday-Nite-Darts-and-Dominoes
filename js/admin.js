@@ -1,18 +1,86 @@
-const ADMIN_PASSWORD = "Monday123";
+
 const SUPABASE_URL = "https://wevedaffdzdvbkxydblw.supabase.co";
 
 const SUPABASE_KEY =
   "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
+let adminAccessToken = "";
 const teams = ["Crown A","Punch","ICI","Golden Cup","The Park Inn","Bird in Hand","Victoria A","Two Gates Club","Funky Room","Entwistle","Crown B","Victoria B"];
 let fixtures=[];
+async function login() {
 
-function login(){
-  const password=document.getElementById("adminPassword").value;
-  if(password!==ADMIN_PASSWORD){alert("Incorrect password");return;}
-  document.getElementById("loginCard").style.display="none";
-  document.getElementById("adminPanel").style.display="block";
-  generateFixtures(); loadWeeks(); loadAllPlayerSelectors(); loadChampionTeams(); loadDeleteResults();
+  const email =
+    document.getElementById("adminEmail").value.trim();
+
+  const password =
+    document.getElementById("adminPassword").value;
+
+  if (!email || !password) {
+    alert("Please enter your email and password.");
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      SUPABASE_URL +
+      "/auth/v1/token?grant_type=password",
+      {
+        method: "POST",
+
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          email: email,
+          password: password
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+
+      console.error(data);
+
+      alert("❌ Incorrect email or password.");
+      return;
+    }
+
+    adminAccessToken =
+      data.access_token;
+
+    document.getElementById(
+      "loginCard"
+    ).style.display = "none";
+
+    document.getElementById(
+      "adminPanel"
+    ).style.display = "block";
+
+    generateFixtures();
+    loadWeeks();
+    loadAllPlayerSelectors();
+    loadChampionTeams();
+    loadDeleteResults();
+
+    alert("🔐 Admin logged in!");
+
+  } catch (error) {
+
+    console.error(
+      "LOGIN ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Could not log in."
+    );
+  }
 }
+
 
 function generateFixtures(){
   fixtures=[]; const list=[...teams];
@@ -78,7 +146,8 @@ async function saveAdminResult() {
 
         headers: {
           "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + SUPABASE_KEY,
+          "Authorization":
+  "Bearer " + adminAccessToken
           "Content-Type": "application/json",
           "Prefer": "return=representation"
         },
