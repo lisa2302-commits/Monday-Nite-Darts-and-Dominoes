@@ -118,17 +118,191 @@ async function saveAdminResult() {
   }
 }
 
-function loadDeleteResults(){
-  const select=document.getElementById("deleteResultSelect"); if(!select)return;
-  const results=JSON.parse(localStorage.getItem("results"))||[]; select.innerHTML="";
-  if(!results.length){select.innerHTML='<option value="">No results yet</option>';return;}
-  results.forEach((r,i)=>select.innerHTML+=`<option value="${i}">Week ${r.week}: ${r.home} ${r.homeScore}-${r.awayScore} ${r.away}</option>`);
+let onlineResults = [];
+
+async function loadDeleteResults() {
+
+  const select =
+    document.getElementById("deleteResultSelect");
+
+  if (!select) return;
+
+  select.innerHTML =
+    '<option value="">Loading results...</option>';
+
+  try {
+
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/results?select=week,fixture,home_score,away_score&order=week.asc",
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization":
+            "Bearer " + SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+    }
+
+    onlineResults =
+      await response.json();
+
+    select.innerHTML = "";
+
+    if (!onlineResults.length) {
+
+      select.innerHTML =
+        '<option value="">No results yet</option>';
+
+      return;
+    }
+
+    onlineResults.forEach((r, i) => {
+
+      const teams =
+        r.fixture.split(/\s+v\s+/);
+
+      const home =
+        teams[0] || "";
+
+      const away =
+        teams[1] || "";
+
+      select.innerHTML += `
+        <option value="${i}">
+          Week ${r.week}: ${home}
+          ${r.home_score}-${r.away_score}
+          ${away}
+        </option>
+      `;
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "LOAD DELETE RESULTS ERROR:",
+      error
+    );
+
+    select.innerHTML =
+      '<option value="">Unable to load results</option>';
+  }
 }
-function deleteAdminResult(){
-  const select=document.getElementById("deleteResultSelect"); if(!select||select.value===""){alert("No result selected.");return;}
-  let results=JSON.parse(localStorage.getItem("results"))||[]; const i=Number(select.value); if(!results[i])return;
-  const r=results[i]; if(!confirm(`Delete Week ${r.week}: ${r.home} ${r.homeScore}-${r.awayScore} ${r.away}?`))return;
-  results.splice(i,1); localStorage.setItem("results",JSON.stringify(results)); loadDeleteResults(); alert("🗑️ Result deleted.");
+
+
+async function deleteAdminResult() {
+
+  const select =
+    document.getElementById("deleteResultSelect");
+
+  if (
+    !select ||
+    select.value === ""
+  ) {
+
+    alert("No result selected.");
+    return;
+  }
+
+  const r =
+    onlineResults[Number(select.value)];
+
+  if (!r) return;
+
+
+  const teams =
+    r.fixture.split(/\s+v\s+/);
+
+  const home =
+    teams[0] || "";
+
+  const away =
+    teams[1] || "";
+
+
+  if (
+    !confirm(
+      `Delete Week ${r.week}: ` +
+      `${home} ${r.home_score}-${r.away_score} ${away}?`
+    )
+  ) {
+    return;
+  }
+
+
+  try {
+
+    const params =
+      new URLSearchParams();
+
+    params.set(
+      "week",
+      "eq." + r.week
+    );
+
+    params.set(
+      "fixture",
+      "eq." + r.fixture
+    );
+
+
+    const response =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/results?" +
+        params.toString(),
+        {
+          method: "DELETE",
+
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization":
+              "Bearer " + SUPABASE_KEY
+          }
+        }
+      );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      console.error(errorText);
+
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+    }
+
+
+    await loadDeleteResults();
+
+    alert(
+      "🗑️ Result deleted online."
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "DELETE RESULT ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Result could not be deleted."
+    );
+  }
 }
 
 function loadPlayerTeam(){const s=document.getElementById("playerTeam");if(!s)return;s.innerHTML="";teams.forEach(t=>s.innerHTML+=`<option value="${t}">${t}</option>`);}
