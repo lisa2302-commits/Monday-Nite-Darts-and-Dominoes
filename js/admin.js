@@ -1395,12 +1395,22 @@ async function backupLeague() {
       champions: champions
     };
 
+    const backupText =
+      JSON.stringify(
+        data,
+        null,
+        2
+      );
+
+
+    // SHOW BACKUP ON SCREEN
+
     const backupArea =
       document.getElementById(
         "backupArea"
       );
 
-    const backupText =
+    const backupBox =
       document.getElementById(
         "backupText"
       );
@@ -1410,17 +1420,61 @@ async function backupLeague() {
         "block";
     }
 
-    if (backupText) {
-      backupText.value =
-        JSON.stringify(
-          data,
-          null,
-          2
-        );
+    if (backupBox) {
+      backupBox.value =
+        backupText;
     }
 
+
+    // DOWNLOAD BACKUP FILE
+
+    const blob =
+      new Blob(
+        [backupText],
+        {
+          type:
+            "application/json"
+        }
+      );
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    const today =
+      new Date()
+        .toISOString()
+        .slice(0, 10);
+
+    link.href = url;
+
+    link.download =
+      "Monday-Nite-League-Backup-" +
+      today +
+      ".json";
+
+    document.body.appendChild(
+      link
+    );
+
+    link.click();
+
+    document.body.removeChild(
+      link
+    );
+
+    URL.revokeObjectURL(
+      url
+    );
+
     alert(
-      "💾 League backup created!"
+      "💾 League backup downloaded!"
     );
 
   } catch (error) {
@@ -1431,7 +1485,7 @@ async function backupLeague() {
     );
 
     alert(
-      "❌ Backup could not be created."
+      "❌ Backup could not be downloaded."
     );
   }
 }
