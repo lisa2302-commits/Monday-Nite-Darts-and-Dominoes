@@ -117,36 +117,83 @@ function generateFixtures() {
 
   const list = [...teams];
 
+  const homeAwayPattern = [
+    [1, 0, 1, 1, 1, 1],
+    [1, 0, 1, 0, 0, 0],
+    [0, 0, 1, 1, 1, 1],
+    [0, 0, 1, 0, 0, 0],
+    [1, 0, 1, 0, 1, 0],
+    [0, 0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1, 0],
+    [0, 1, 1, 0, 1, 0],
+    [0, 0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1, 0],
+    [1, 1, 1, 0, 1, 0]
+  ];
+
+
+  // =========================
+  // WEEKS 1 - 11
+  // =========================
+
   for (let week = 1; week <= 11; week++) {
 
     for (let i = 0; i < 6; i++) {
 
-      fixtures.push({
-        week: week,
-        home: list[i],
-        away: list[11 - i]
-      });
+      const team1 = list[i];
+      const team2 = list[11 - i];
+
+      const reverse =
+        homeAwayPattern[week - 1][i];
+
+      if (reverse) {
+
+        fixtures.push({
+          week: week,
+          home: team2,
+          away: team1
+        });
+
+      } else {
+
+        fixtures.push({
+          week: week,
+          home: team1,
+          away: team2
+        });
+
+      }
+
     }
 
     const last = list.pop();
 
-    list.splice(1, 0, last);
+    list.splice(
+      1,
+      0,
+      last
+    );
   }
 
-  const firstHalf =
-    [...fixtures];
 
-  firstHalf.forEach(f => {
+  // =========================
+  // WEEKS 12 - 22
+  // REVERSE HOME / AWAY
+  // =========================
+
+  const firstHalf = [...fixtures];
+
+  firstHalf.forEach(fixture => {
 
     fixtures.push({
-      week: f.week + 11,
-      home: f.away,
-      away: f.home
+      week: fixture.week + 11,
+      home: fixture.away,
+      away: fixture.home
     });
 
   });
-}
 
+}
 
 function loadWeeks() {
 
