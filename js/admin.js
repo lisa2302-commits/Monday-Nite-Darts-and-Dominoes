@@ -1489,3 +1489,235 @@ async function backupLeague() {
     );
   }
 }
+async function restoreLeagueBackup() {
+
+  const fileInput =
+    document.getElementById(
+      "restoreFile"
+    );
+
+  if (
+    !fileInput ||
+    !fileInput.files.length
+  ) {
+
+    alert(
+      "Please choose a backup file first."
+    );
+
+    return;
+  }
+
+  const file =
+    fileInput.files[0];
+
+  try {
+
+    const text =
+      await file.text();
+
+    const backup =
+      JSON.parse(text);
+
+
+    // CHECK BACKUP FORMAT
+
+    if (
+      !backup.results ||
+      !backup.players ||
+      !backup.champions ||
+      !Array.isArray(backup.results) ||
+      !Array.isArray(backup.players) ||
+      !Array.isArray(backup.champions)
+    ) {
+
+      alert(
+        "❌ This does not look like a valid league backup file."
+      );
+
+      return;
+    }
+
+
+    const ok =
+      confirm(
+        "⚠️ Restore this league backup?\n\n" +
+        "This will ADD the backup data back into Supabase.\n\n" +
+        "Only continue if you are sure this is the correct backup file."
+      );
+
+    if (!ok) {
+      return;
+    }
+
+
+    const headers = {
+      "apikey":
+        SUPABASE_KEY,
+
+      "Authorization":
+        "Bearer " +
+        adminAccessToken,
+
+      "Content-Type":
+        "application/json"
+    };
+
+
+    // =========================
+    // RESTORE RESULTS
+    // =========================
+
+    for (
+      const result
+      of backup.results
+    ) {
+
+      const response =
+        await fetch(
+          SUPABASE_URL +
+          "/rest/v1/results",
+          {
+            method: "POST",
+
+            headers: headers,
+
+            body:
+              JSON.stringify({
+                week:
+                  result.week,
+
+                fixture:
+                  result.fixture,
+
+                home_score:
+                  result.home_score,
+
+                away_score:
+                  result.away_score
+              })
+          }
+        );
+
+      if (!response.ok) {
+
+        throw new Error(
+          "Could not restore results."
+        );
+      }
+    }
+
+
+    // =========================
+    // RESTORE PLAYERS
+    // =========================
+
+    for (
+      const player
+      of backup.players
+    ) {
+
+      const response =
+        await fetch(
+          SUPABASE_URL +
+          "/rest/v1/players",
+          {
+            method: "POST",
+
+            headers: headers,
+
+            body:
+              JSON.stringify({
+                name:
+                  player.name,
+
+                team:
+                  player.team,
+
+                hundreds:
+                  Number(
+                    player.hundreds
+                  ) || 0,
+
+                checkout:
+                  Number(
+                    player.checkout
+                  ) || 0,
+
+                domino30:
+                  Number(
+                    player.domino30
+                  ) || 0
+              })
+          }
+        );
+
+      if (!response.ok) {
+
+        throw new Error(
+          "Could not restore players."
+        );
+      }
+    }
+
+
+    // =========================
+    // RESTORE CHAMPIONS
+    // =========================
+
+    for (
+      const champion
+      of backup.champions
+    ) {
+
+      const response =
+        await fetch(
+          SUPABASE_URL +
+          "/rest/v1/champions",
+          {
+            method: "POST",
+
+            headers: headers,
+
+            body:
+              JSON.stringify({
+                season:
+                  champion.season,
+
+                team:
+                  champion.team
+              })
+          }
+        );
+
+      if (!response.ok) {
+
+        throw new Error(
+          "Could not restore champions."
+        );
+      }
+    }
+
+
+    await loadDeleteResults();
+    await loadAllPlayerSelectors();
+
+    fileInput.value = "";
+
+    alert(
+      "♻️ League backup restored successfully!"
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "RESTORE ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Backup could not be restored."
+    );
+  }
+}
