@@ -34,4 +34,27 @@
 <hr><h2>🎯 Highest Checkout</h2><label>Player</label><select id="checkoutPlayer"></select><label>Checkout</label><input id="checkoutValue" type="number" min="0" placeholder="Highest checkout"><button onclick="saveCheckout()">💾 Save Checkout</button>
 <hr><h2>🏆 Add League Champion</h2><label>Season</label><input id="championSeason" type="text" placeholder="e.g. 2026/27"><label>Winning Team</label><select id="championTeam"></select><button onclick="saveChampion()">🏆 Save League Champion</button>
 <hr><h2>💾 League Backup</h2><button onclick="backupLeague()">💾 Download League Backup</button><div id="backupArea" style="display:none;"><h3>📋 Backup Data</h3><textarea id="backupText" rows="12"></textarea><p>Copy this text and keep it somewhere safe.</p></div>
+  <hr style="margin:25px 0;">
+
+<h3>♻️ Restore League Backup</h3>
+
+<p>
+  Select one of your Monday Nite League
+  .json backup files.
+</p>
+
+<input
+  type="file"
+  id="restoreFile"
+  accept=".json,application/json"
+>
+
+<br><br>
+
+<button
+  type="button"
+  onclick="restoreLeagueBackup()"
+>
+  ♻️ Restore Backup
+</button>
 </div><script src="js/admin.js"></script></body></html>
