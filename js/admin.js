@@ -1492,210 +1492,204 @@ async function backupLeague() {
 async function restoreLeagueBackup() {
 
   const fileInput =
-    document.getElementById(
-      "restoreFile"
-    );
+    document.getElementById("restoreFile");
 
   if (
     !fileInput ||
     !fileInput.files.length
   ) {
-
-    alert(
-      "Please choose a backup file first."
-    );
-
+    alert("Please choose a backup file first.");
     return;
   }
 
-  const file =
-    fileInput.files[0];
+  const file = fileInput.files[0];
 
   try {
 
-    const text =
-      await file.text();
-
-    const backup =
-      JSON.parse(text);
-
-
-    // CHECK BACKUP FORMAT
+    const text = await file.text();
+    const backup = JSON.parse(text);
 
     if (
-      !backup.results ||
-      !backup.players ||
-      !backup.champions ||
       !Array.isArray(backup.results) ||
       !Array.isArray(backup.players) ||
       !Array.isArray(backup.champions)
     ) {
-
-      alert(
-        "❌ This does not look like a valid league backup file."
-      );
-
+      alert("❌ This does not look like a valid league backup file.");
       return;
     }
 
+    const ok = confirm(
+      "⚠️ Restore this backup?\n\n" +
+      "Existing matching data will be skipped.\n" +
+      "Missing data will be restored."
+    );
 
-    const ok =
-      confirm(
-        "⚠️ Restore this league backup?\n\n" +
-        "This will ADD the backup data back into Supabase.\n\n" +
-        "Only continue if you are sure this is the correct backup file."
-      );
-
-    if (!ok) {
-      return;
-    }
-
+    if (!ok) return;
 
     const headers = {
-      "apikey":
-        SUPABASE_KEY,
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + adminAccessToken,
+      "Content-Type": "application/json"
+    };
 
-      "Authorization":
-        "Bearer " +
-        adminAccessToken,
-
-      "Content-Type":
-        "application/json"
+    const readHeaders = {
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + adminAccessToken
     };
 
 
-    // =========================
+    // LOAD CURRENT DATA
+
+    const [
+      currentResultsResponse,
+      currentPlayersResponse,
+      currentChampionsResponse
+    ] = await Promise.all([
+
+      fetch(
+        SUPABASE_URL + "/rest/v1/results?select=*",
+        { headers: readHeaders }
+      ),
+
+      fetch(
+        SUPABASE_URL + "/rest/v1/players?select=*",
+        { headers: readHeaders }
+      ),
+
+      fetch(
+        SUPABASE_URL + "/rest/v1/champions?select=*",
+        { headers: readHeaders }
+      )
+    ]);
+
+    if (
+      !currentResultsResponse.ok ||
+      !currentPlayersResponse.ok ||
+      !currentChampionsResponse.ok
+    ) {
+      throw new Error("Could not read current league data.");
+    }
+
+    const currentResults =
+      await currentResultsResponse.json();
+
+    const currentPlayers =
+      await currentPlayersResponse.json();
+
+    const currentChampions =
+      await currentChampionsResponse.json();
+
+
+    let restoredResults = 0;
+    let restoredPlayers = 0;
+    let restoredChampions = 0;
+
+
     // RESTORE RESULTS
-    // =========================
 
-    for (
-      const result
-      of backup.results
-    ) {
+    for (const result of backup.results) {
 
-      const response =
-        await fetch(
-          SUPABASE_URL +
-          "/rest/v1/results",
-          {
-            method: "POST",
-
-            headers: headers,
-
-            body:
-              JSON.stringify({
-                week:
-                  result.week,
-
-                fixture:
-                  result.fixture,
-
-                home_score:
-                  result.home_score,
-
-                away_score:
-                  result.away_score
-              })
-          }
+      const alreadyExists =
+        currentResults.some(existing =>
+          Number(existing.week) === Number(result.week) &&
+          existing.fixture === result.fixture
         );
+
+      if (alreadyExists) {
+        continue;
+      }
+
+      const response = await fetch(
+        SUPABASE_URL + "/rest/v1/results",
+        {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({
+            week: result.week,
+            fixture: result.fixture,
+            home_score: result.home_score,
+            away_score: result.away_score
+          })
+        }
+      );
 
       if (!response.ok) {
-
-        throw new Error(
-          "Could not restore results."
-        );
+        throw new Error("Could not restore a result.");
       }
+
+      restoredResults++;
     }
 
 
-    // =========================
     // RESTORE PLAYERS
-    // =========================
 
-    for (
-      const player
-      of backup.players
-    ) {
+    for (const player of backup.players) {
 
-      const response =
-        await fetch(
-          SUPABASE_URL +
-          "/rest/v1/players",
-          {
-            method: "POST",
-
-            headers: headers,
-
-            body:
-              JSON.stringify({
-                name:
-                  player.name,
-
-                team:
-                  player.team,
-
-                hundreds:
-                  Number(
-                    player.hundreds
-                  ) || 0,
-
-                checkout:
-                  Number(
-                    player.checkout
-                  ) || 0,
-
-                domino30:
-                  Number(
-                    player.domino30
-                  ) || 0
-              })
-          }
+      const alreadyExists =
+        currentPlayers.some(existing =>
+          existing.name.toLowerCase() ===
+            player.name.toLowerCase() &&
+          existing.team === player.team
         );
+
+      if (alreadyExists) {
+        continue;
+      }
+
+      const response = await fetch(
+        SUPABASE_URL + "/rest/v1/players",
+        {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({
+            name: player.name,
+            team: player.team,
+            hundreds: Number(player.hundreds) || 0,
+            checkout: Number(player.checkout) || 0,
+            domino30: Number(player.domino30) || 0
+          })
+        }
+      );
 
       if (!response.ok) {
-
-        throw new Error(
-          "Could not restore players."
-        );
+        throw new Error("Could not restore a player.");
       }
+
+      restoredPlayers++;
     }
 
 
-    // =========================
     // RESTORE CHAMPIONS
-    // =========================
 
-    for (
-      const champion
-      of backup.champions
-    ) {
+    for (const champion of backup.champions) {
 
-      const response =
-        await fetch(
-          SUPABASE_URL +
-          "/rest/v1/champions",
-          {
-            method: "POST",
-
-            headers: headers,
-
-            body:
-              JSON.stringify({
-                season:
-                  champion.season,
-
-                team:
-                  champion.team
-              })
-          }
+      const alreadyExists =
+        currentChampions.some(existing =>
+          existing.season === champion.season &&
+          existing.team === champion.team
         );
+
+      if (alreadyExists) {
+        continue;
+      }
+
+      const response = await fetch(
+        SUPABASE_URL + "/rest/v1/champions",
+        {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({
+            season: champion.season,
+            team: champion.team
+          })
+        }
+      );
 
       if (!response.ok) {
-
-        throw new Error(
-          "Could not restore champions."
-        );
+        throw new Error("Could not restore a champion.");
       }
+
+      restoredChampions++;
     }
 
 
@@ -1705,19 +1699,16 @@ async function restoreLeagueBackup() {
     fileInput.value = "";
 
     alert(
-      "♻️ League backup restored successfully!"
+      "♻️ Restore complete!\n\n" +
+      "Results restored: " + restoredResults + "\n" +
+      "Players restored: " + restoredPlayers + "\n" +
+      "Champions restored: " + restoredChampions
     );
-
 
   } catch (error) {
 
-    console.error(
-      "RESTORE ERROR:",
-      error
-    );
+    console.error("RESTORE ERROR:", error);
 
-    alert(
-      "❌ Backup could not be restored."
-    );
+    alert("❌ Backup could not be restored.");
   }
 }
