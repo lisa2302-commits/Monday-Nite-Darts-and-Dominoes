@@ -1244,7 +1244,7 @@ function loadChampionTeams() {
 }
 
 
-function saveChampion() {
+async function saveChampion() {
 
   const season =
     document.getElementById(
@@ -1265,30 +1265,70 @@ function saveChampion() {
     return;
   }
 
-  const champions =
-    JSON.parse(
-      localStorage.getItem(
-        "champions"
-      )
-    ) || [];
+  try {
 
-  champions.push({
-    season: season,
-    team: team
-  });
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/champions",
+      {
+        method: "POST",
 
-  localStorage.setItem(
-    "champions",
-    JSON.stringify(champions)
-  );
+        headers: {
+          "apikey":
+            SUPABASE_KEY,
 
-  document.getElementById(
-    "championSeason"
-  ).value = "";
+          "Authorization":
+            "Bearer " +
+            adminAccessToken,
 
-  alert(
-    `🏆 ${team} saved as champions for ${season}!`
-  );
+          "Content-Type":
+            "application/json",
+
+          "Prefer":
+            "return=representation"
+        },
+
+        body: JSON.stringify({
+          season: season,
+          team: team
+        })
+      }
+    );
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      console.error(
+        errorText
+      );
+
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+    }
+
+    document.getElementById(
+      "championSeason"
+    ).value = "";
+
+    alert(
+      `🏆 ${team} saved as champions for ${season}!`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "SAVE CHAMPION ERROR:",
+      error
+    );
+
+    alert(
+      "❌ Champion could not be saved."
+    );
+  }
 }
 
 
