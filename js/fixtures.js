@@ -40,23 +40,99 @@ function generateFixtures() {
 
   const list = [...teams];
 
+  const lastVenue = {};
+  const homeCount = {};
+
+  teams.forEach(team => {
+    lastVenue[team] = null;
+    homeCount[team] = 0;
+  });
+
+
+  // =========================
+  // WEEKS 1 - 11
+  // =========================
+
   for (let week = 1; week <= 11; week++) {
 
     for (let i = 0; i < 6; i++) {
 
+      const team1 = list[i];
+      const team2 = list[11 - i];
+
+      let home;
+      let away;
+
+
+      // If possible, make both teams
+      // alternate from last week's venue
+
+      if (
+        lastVenue[team1] === "H" &&
+        lastVenue[team2] === "A"
+      ) {
+
+        home = team2;
+        away = team1;
+
+      } else if (
+        lastVenue[team1] === "A" &&
+        lastVenue[team2] === "H"
+      ) {
+
+        home = team1;
+        away = team2;
+
+      } else {
+
+        // If perfect alternation is impossible,
+        // give home to the team with fewer
+        // home matches so far.
+
+        if (
+          homeCount[team1] <=
+          homeCount[team2]
+        ) {
+
+          home = team1;
+          away = team2;
+
+        } else {
+
+          home = team2;
+          away = team1;
+
+        }
+
+      }
+
+
       fixtures.push({
         week: week,
-        home: list[i],
-        away: list[11 - i]
+        home: home,
+        away: away
       });
 
+
+      lastVenue[home] = "H";
+      lastVenue[away] = "A";
+
+      homeCount[home]++;
+
     }
+
 
     const last = list.pop();
 
     list.splice(1, 0, last);
+
   }
 
+
+  // =========================
+  // WEEKS 12 - 22
+  // SAME FIXTURES, VENUES REVERSED
+  // =========================
 
   const firstHalf = [...fixtures];
 
