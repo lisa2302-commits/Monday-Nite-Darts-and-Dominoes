@@ -8,13 +8,13 @@ const SUPABASE_KEY =
 async function loadHallOfFame() {
 
   const table =
-    document.getElementById("hallOfFameTable");
+    document.getElementById("hallTable");
 
   if (!table) return;
 
   table.innerHTML = `
     <tr>
-      <td colspan="3">
+      <td colspan="2">
         Loading champions...
       </td>
     </tr>
@@ -49,8 +49,8 @@ async function loadHallOfFame() {
 
       table.innerHTML = `
         <tr>
-          <td colspan="3">
-            No champions added yet
+          <td colspan="2">
+            No champions recorded yet
           </td>
         </tr>
       `;
@@ -62,9 +62,8 @@ async function loadHallOfFame() {
 
       table.innerHTML += `
         <tr>
-          <td>🏆</td>
           <td>${champion.season}</td>
-          <td>${champion.team}</td>
+          <td>🏆 ${champion.team}</td>
         </tr>
       `;
 
@@ -79,7 +78,7 @@ async function loadHallOfFame() {
 
     table.innerHTML = `
       <tr>
-        <td colspan="3">
+        <td colspan="2">
           ❌ Unable to load champions
         </td>
       </tr>
