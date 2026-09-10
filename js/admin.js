@@ -1340,37 +1340,42 @@ async function backupLeague() {
 
   try {
 
+    const headers = {
+      "apikey": SUPABASE_KEY,
+      "Authorization":
+        "Bearer " + adminAccessToken
+    };
+
     const resultsResponse =
       await fetch(
         SUPABASE_URL +
         "/rest/v1/results?select=*",
-        {
-          headers: {
-            "apikey":
-              SUPABASE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              adminAccessToken
-          }
-        }
+        { headers }
       );
 
     const playersResponse =
       await fetch(
         SUPABASE_URL +
         "/rest/v1/players?select=*",
-        {
-          headers: {
-            "apikey":
-              SUPABASE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              adminAccessToken
-          }
-        }
+        { headers }
       );
+
+    const championsResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/champions?select=*",
+        { headers }
+      );
+
+    if (
+      !resultsResponse.ok ||
+      !playersResponse.ok ||
+      !championsResponse.ok
+    ) {
+      throw new Error(
+        "Could not load backup data."
+      );
+    }
 
     const results =
       await resultsResponse.json();
@@ -1379,13 +1384,12 @@ async function backupLeague() {
       await playersResponse.json();
 
     const champions =
-      JSON.parse(
-        localStorage.getItem(
-          "champions"
-        )
-      ) || [];
+      await championsResponse.json();
 
     const data = {
+      backupDate:
+        new Date().toISOString(),
+
       results: results,
       players: players,
       champions: champions
@@ -1414,6 +1418,10 @@ async function backupLeague() {
           2
         );
     }
+
+    alert(
+      "💾 League backup created!"
+    );
 
   } catch (error) {
 
