@@ -1,115 +1,91 @@
-// ============================
-// LOAD CHAMPIONS
-// ============================
+const SUPABASE_URL =
+  "https://wevedaffdzdvbkxydblw.supabase.co";
 
-function loadChampions() {
+const SUPABASE_KEY =
+  "sb_publishable_NJ5-zUej-yNedbcp4dMPrQ_IYRH4p6t";
+
+
+async function loadHallOfFame() {
 
   const table =
-    document.getElementById("hallTable");
+    document.getElementById("hallOfFameTable");
 
   if (!table) return;
 
-  const champions =
-    JSON.parse(
-      localStorage.getItem("champions")
-    ) || [];
+  table.innerHTML = `
+    <tr>
+      <td colspan="3">
+        Loading champions...
+      </td>
+    </tr>
+  `;
 
-  table.innerHTML = "";
+  try {
 
-  if (champions.length === 0) {
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/champions?select=id,season,team&order=id.desc",
+      {
+        headers: {
+          "apikey": SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Supabase returned " +
+        response.status
+      );
+    }
+
+    const champions =
+      await response.json();
+
+    table.innerHTML = "";
+
+    if (!champions.length) {
+
+      table.innerHTML = `
+        <tr>
+          <td colspan="3">
+            No champions added yet
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    champions.forEach(champion => {
+
+      table.innerHTML += `
+        <tr>
+          <td>🏆</td>
+          <td>${champion.season}</td>
+          <td>${champion.team}</td>
+        </tr>
+      `;
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "HALL OF FAME ERROR:",
+      error
+    );
 
     table.innerHTML = `
       <tr>
-        <td colspan="2">
-          No champions recorded yet
+        <td colspan="3">
+          ❌ Unable to load champions
         </td>
       </tr>
     `;
-
-    return;
   }
-
-  champions.forEach(champion => {
-
-    table.innerHTML += `
-      <tr>
-        <td>${champion.season}</td>
-        <td>🏆 ${champion.team}</td>
-      </tr>
-    `;
-
-  });
-
 }
 
 
-// ============================
-// LOAD PLAYER RECORDS
-// ============================
-
-function loadRecords() {
-
-  const players =
-    JSON.parse(
-      localStorage.getItem("players")
-    ) || [];
-
-  if (players.length === 0) return;
-
-  const most180s =
-    [...players].sort(
-      (a, b) =>
-        (b.hundreds || 0) -
-        (a.hundreds || 0)
-    )[0];
-
-  const highestCheckout =
-    [...players].sort(
-      (a, b) =>
-        (b.checkout || 0) -
-        (a.checkout || 0)
-    )[0];
-
-  const mostDominoes =
-    [...players].sort(
-      (a, b) =>
-        (b.domino30 || 0) -
-        (a.domino30 || 0)
-    )[0];
-
-  const records =
-    document.querySelectorAll(
-      ".card:nth-of-type(2) p strong"
-    );
-
-  if (records.length >= 4) {
-
-    records[1].textContent =
-      most180s.name +
-      " (" +
-      (most180s.hundreds || 0) +
-      ")";
-
-    records[2].textContent =
-      highestCheckout.name +
-      " (" +
-      (highestCheckout.checkout || 0) +
-      ")";
-
-    records[3].textContent =
-      mostDominoes.name +
-      " (" +
-      (mostDominoes.domino30 || 0) +
-      ")";
-
-  }
-
-}
-
-
-// ============================
-// START
-// ============================
-
-loadChampions();
-loadRecords();
+loadHallOfFame();
