@@ -57,7 +57,6 @@ async function loadHallOfFame() {
       !championsResponse.ok ||
       !playersResponse.ok
     ) {
-
       throw new Error(
         "Could not load Hall of Fame data."
       );
@@ -122,35 +121,30 @@ async function loadHallOfFame() {
 
         champions.forEach(champion => {
 
-          if (!titleCounts[champion.team]) {
-            titleCounts[champion.team] = 0;
-          }
-
-          titleCounts[champion.team]++;
+          titleCounts[champion.team] =
+            (titleCounts[champion.team] || 0) + 1;
 
         });
 
+        const highestTotal =
+          Math.max(
+            ...Object.values(titleCounts)
+          );
 
-        let topTeam = "";
-        let topTitles = 0;
-
-        Object.entries(titleCounts)
-          .forEach(([team, total]) => {
-
-            if (total > topTitles) {
-
-              topTeam = team;
-              topTitles = total;
-
-            }
-
-          });
-
+        const tiedTeams =
+          Object.entries(titleCounts)
+            .filter(
+              ([team, total]) =>
+                total === highestTotal
+            )
+            .map(
+              ([team]) => team
+            );
 
         mostTitles.textContent =
-          topTeam +
+          tiedTeams.join(" / ") +
           " (" +
-          topTitles +
+          highestTotal +
           ")";
       }
     }
@@ -168,17 +162,27 @@ async function loadHallOfFame() {
 
       } else {
 
-        const top180 =
-          [...players].sort(
-            (a, b) =>
-              Number(b.hundreds || 0) -
-              Number(a.hundreds || 0)
-          )[0];
+        const highest180 =
+          Math.max(
+            ...players.map(
+              player =>
+                Number(player.hundreds || 0)
+            )
+          );
+
+        const tiedPlayers =
+          players.filter(
+            player =>
+              Number(player.hundreds || 0) ===
+              highest180
+          );
 
         most180s.textContent =
-          top180.name +
+          tiedPlayers
+            .map(player => player.name)
+            .join(" / ") +
           " (" +
-          Number(top180.hundreds || 0) +
+          highest180 +
           ")";
       }
     }
@@ -196,17 +200,27 @@ async function loadHallOfFame() {
 
       } else {
 
-        const topCheckout =
-          [...players].sort(
-            (a, b) =>
-              Number(b.checkout || 0) -
-              Number(a.checkout || 0)
-          )[0];
+        const highestValue =
+          Math.max(
+            ...players.map(
+              player =>
+                Number(player.checkout || 0)
+            )
+          );
+
+        const tiedPlayers =
+          players.filter(
+            player =>
+              Number(player.checkout || 0) ===
+              highestValue
+          );
 
         highestCheckout.textContent =
-          topCheckout.name +
+          tiedPlayers
+            .map(player => player.name)
+            .join(" / ") +
           " (" +
-          Number(topCheckout.checkout || 0) +
+          highestValue +
           ")";
       }
     }
@@ -224,17 +238,27 @@ async function loadHallOfFame() {
 
       } else {
 
-        const topDomino =
-          [...players].sort(
-            (a, b) =>
-              Number(b.domino30 || 0) -
-              Number(a.domino30 || 0)
-          )[0];
+        const highestDomino =
+          Math.max(
+            ...players.map(
+              player =>
+                Number(player.domino30 || 0)
+            )
+          );
+
+        const tiedPlayers =
+          players.filter(
+            player =>
+              Number(player.domino30 || 0) ===
+              highestDomino
+          );
 
         mostDomino30.textContent =
-          topDomino.name +
+          tiedPlayers
+            .map(player => player.name)
+            .join(" / ") +
           " (" +
-          Number(topDomino.domino30 || 0) +
+          highestDomino +
           ")";
       }
     }
