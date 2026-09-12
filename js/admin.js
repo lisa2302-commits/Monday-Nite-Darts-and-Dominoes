@@ -117,19 +117,13 @@ function generateFixtures() {
 
   const list = [...teams];
 
-  const homeAwayPattern = [
-    [1, 0, 1, 1, 1, 1],
-    [1, 0, 1, 0, 0, 0],
-    [0, 0, 1, 1, 1, 1],
-    [0, 0, 1, 0, 0, 0],
-    [1, 0, 1, 0, 1, 0],
-    [0, 0, 1, 0, 1, 0],
-    [1, 0, 1, 0, 1, 0],
-    [0, 1, 1, 0, 1, 0],
-    [0, 0, 1, 0, 1, 0],
-    [1, 0, 1, 0, 1, 0],
-    [1, 1, 1, 0, 1, 0]
-  ];
+  const lastVenue = {};
+  const homeCount = {};
+
+  teams.forEach(team => {
+    lastVenue[team] = null;
+    homeCount[team] = 0;
+  });
 
 
   // =========================
@@ -138,33 +132,165 @@ function generateFixtures() {
 
   for (let week = 1; week <= 11; week++) {
 
+    const pairs = [];
+
     for (let i = 0; i < 6; i++) {
 
-      const team1 = list[i];
-      const team2 = list[11 - i];
+      pairs.push([
+        list[i],
+        list[11 - i]
+      ]);
 
-      const reverse =
-        homeAwayPattern[week - 1][i];
+    }
 
-      if (reverse) {
 
-        fixtures.push({
+    let bestFixtures = null;
+    let bestScore = Infinity;
+
+
+    // There are only 64 possible
+    // home/away combinations each week.
+    // Try them all and choose the best one.
+
+    for (let mask = 0; mask < 64; mask++) {
+
+      const candidate = [];
+      const homeTeams = new Set();
+
+      for (let i = 0; i < 6; i++) {
+
+        const team1 = pairs[i][0];
+        const team2 = pairs[i][1];
+
+        let home;
+        let away;
+
+        if (mask & (1 << i)) {
+
+          home = team2;
+          away = team1;
+
+        } else {
+
+          home = team1;
+          away = team2;
+
+        }
+
+        candidate.push({
           week: week,
-          home: team2,
-          away: team1
+          home: home,
+          away: away
         });
 
-      } else {
+        homeTeams.add(home);
 
-        fixtures.push({
-          week: week,
-          home: team1,
-          away: team2
-        });
+      }
+
+
+      // Crown A and Crown B
+      // must be opposite venues
+
+      const crownAHome =
+        homeTeams.has("Crown A");
+
+      const crownBHome =
+        homeTeams.has("Crown B");
+
+      if (crownAHome === crownBHome) {
+        continue;
+      }
+
+
+      // Victoria A and Victoria B
+      // must be opposite venues
+
+      const victoriaAHome =
+        homeTeams.has("Victoria A");
+
+      const victoriaBHome =
+        homeTeams.has("Victoria B");
+
+      if (
+        victoriaAHome ===
+        victoriaBHome
+      ) {
+        continue;
+      }
+
+
+      let score = 0;
+
+
+      // Prefer alternating
+      // home / away each week
+
+      candidate.forEach(match => {
+
+        if (
+          lastVenue[match.home] === "H"
+        ) {
+          score += 100;
+        }
+
+        if (
+          lastVenue[match.away] === "A"
+        ) {
+          score += 100;
+        }
+
+      });
+
+
+      // Also keep the total number
+      // of home matches balanced
+
+      teams.forEach(team => {
+
+        const newHomeCount =
+          homeCount[team] +
+          (
+            homeTeams.has(team)
+              ? 1
+              : 0
+          );
+
+        const ideal =
+          week / 2;
+
+        score +=
+          Math.abs(
+            newHomeCount - ideal
+          );
+
+      });
+
+
+      if (score < bestScore) {
+
+        bestScore = score;
+        bestFixtures = candidate;
 
       }
 
     }
+
+
+    // Add the chosen fixtures
+
+    bestFixtures.forEach(match => {
+
+      fixtures.push(match);
+
+      lastVenue[match.home] = "H";
+      lastVenue[match.away] = "A";
+
+      homeCount[match.home]++;
+
+    });
+
+
+    // Rotate teams for next week
 
     const last = list.pop();
 
@@ -173,45 +299,29 @@ function generateFixtures() {
       0,
       last
     );
+
   }
 
 
   // =========================
   // WEEKS 12 - 22
-  // REVERSE HOME / AWAY
+  // REVERSE THE VENUES
   // =========================
 
-  const firstHalf = [...fixtures];
+  const firstHalf =
+    [...fixtures];
 
-  firstHalf.forEach(fixture => {
+  firstHalf.forEach(match => {
 
     fixtures.push({
-      week: fixture.week + 11,
-      home: fixture.away,
-      away: fixture.home
+      week: match.week + 11,
+      home: match.away,
+      away: match.home
     });
 
   });
 
 }
-
-function loadWeeks() {
-
-  const select =
-    document.getElementById("weekSelect");
-
-  if (!select) return;
-
-  select.innerHTML = "";
-
-  for (let w = 1; w <= 22; w++) {
-
-    select.innerHTML += `
-      <option value="${w}">
-        Week ${w}
-      </option>
-    `;
-  }
 
   loadFixturesForWeek();
 }
